@@ -116,3 +116,94 @@ export async function sendWelcomeEmail({
     return { sent: false, error: message };
   }
 }
+
+export async function sendPasswordResetEmail({
+  to,
+  ownerName,
+  resetUrl,
+}: {
+  to: string;
+  ownerName: string;
+  resetUrl: string;
+}): Promise<{ sent: boolean; error?: string }> {
+  const resend = getResendClient();
+  if (!resend) {
+    return { sent: false, error: "RESEND_API_KEY not configured" };
+  }
+
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Tablory <onboarding@resend.dev>";
+  const safeName = escapeHtml(ownerName || "Partner");
+  const safeUrl = escapeHtml(resetUrl);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset your ${BRAND_THEME.name} password</title>
+</head>
+<body style="margin:0;padding:0;background-color:${BRAND_THEME.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${BRAND_THEME.foreground};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid ${BRAND_THEME.border};border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px;border-bottom:1px solid ${BRAND_THEME.border};">
+              <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:8px;background-color:${BRAND_THEME.primary};color:#ffffff;font-weight:800;font-size:15px;vertical-align:middle;">T</span>
+              <span style="margin-left:10px;font-size:20px;font-weight:800;letter-spacing:-0.02em;color:${BRAND_THEME.foreground};vertical-align:middle;">Tabl<span style="color:${BRAND_THEME.primary};">ory</span></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;font-weight:800;color:${BRAND_THEME.foreground};">
+                Reset your password
+              </h1>
+              <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#44403C;">
+                Hi ${safeName}, we received a request to reset your Tablory account password. Click the button below to choose a new password. This link expires in <strong>15 minutes</strong>.
+              </p>
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
+                <tr>
+                  <td style="border-radius:12px;background-color:${BRAND_THEME.primary};">
+                    <a href="${safeUrl}" target="_blank" style="display:inline-block;padding:13px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">
+                      Reset Password &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:${BRAND_THEME.muted};">
+                If you didn&apos;t request a password reset, you can safely ignore this email. Your password will remain unchanged.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px;background-color:${BRAND_THEME.background};border-top:1px solid ${BRAND_THEME.border};font-size:12px;color:${BRAND_THEME.muted};">
+              <strong>Tablory</strong> &middot; ${BRAND_THEME.tagline}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to,
+      subject: "Reset your Tablory password",
+      html,
+    });
+
+    if (error) {
+      console.error("Resend password reset email error:", error);
+      return { sent: false, error: error.message };
+    }
+
+    return { sent: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown email error";
+    console.error("Resend password reset email exception:", message);
+    return { sent: false, error: message };
+  }
+}
