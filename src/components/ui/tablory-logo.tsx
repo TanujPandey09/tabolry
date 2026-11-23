@@ -23,7 +23,7 @@ export function TabloryLogo({
     <div className={cn("inline-flex items-center gap-2.5 select-none", className)}>
       <div
         className={cn(
-          "relative flex shrink-0 items-center justify-center bg-gradient-to-tr from-[#E15A2B] to-[#D97706] shadow-sm shadow-orange-950/10",
+          "relative flex shrink-0 items-center justify-center bg-gradient-to-tr from-brand to-brand-accent shadow-sm shadow-orange-950/10",
           boxSize
         )}
       >
@@ -48,7 +48,7 @@ export function TabloryLogo({
       {showWordmark && (
         <div className="flex items-center gap-2">
           <span className={cn("font-extrabold tracking-tight text-stone-950 leading-none", textSize)}>
-            Tabl<span className="text-[#E15A2B]">ory</span>
+            Tabl<span className="text-brand">ory</span>
           </span>
           {showBadge && (
             <span className="hidden sm:inline-flex items-center rounded-md border border-stone-200 bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-600">

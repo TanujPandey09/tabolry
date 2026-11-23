@@ -13,7 +13,7 @@ export function LoadingState({
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
       <div className="relative flex h-11 w-11 items-center justify-center">
-        <div className="h-11 w-11 rounded-full border-[2.5px] border-stone-200 border-t-[#E15A2B] animate-spin" />
+        <div className="h-11 w-11 rounded-full border-[2.5px] border-stone-200 border-t-brand animate-spin" />
       </div>
       <h3 className="mt-4 text-sm font-bold tracking-tight text-stone-900">
         {message}

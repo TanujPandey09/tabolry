@@ -4,11 +4,25 @@
 @theme inline {
   --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
   --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-surface: var(--surface);
 }
 
+/* ============================================================================
+   TABLORY GLOBAL THEME TOKENS
+   Change --brand / --brand-hover / --brand-accent here to retheme the app.
+   ============================================================================ */
 :root {
   --background: #faf8f5;
   --foreground: #18181b;
+  --surface: #ffffff;
+  --brand: #e15a2b;
+  --brand-hover: #c94a1e;
+  --brand-accent: #d97706;
+  --brand-foreground: #ffffff;
 }
 
 body {

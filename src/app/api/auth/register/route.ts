@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validators";
 import { handleApiError, ApiError } from "@/lib/tenant";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -50,6 +51,12 @@ export async function POST(request: Request) {
         role: true,
         createdAt: true,
       },
+    });
+
+    // Non-blocking welcome email via Resend
+    void sendWelcomeEmail({
+      to: user.email,
+      ownerName: user.name,
     });
 
     return NextResponse.json({ user }, { status: 201 });
