@@ -53,11 +53,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // Non-blocking welcome email via Resend
-    void sendWelcomeEmail({
-      to: user.email,
-      ownerName: user.name,
-    });
+    // Await email send inside try/catch so Vercel serverless does not terminate it early
+    try {
+      await sendWelcomeEmail({
+        to: user.email,
+        ownerName: user.name,
+        appUrl: new URL(request.url).origin,
+      });
+    } catch (emailErr) {
+      console.error("Welcome email failed after registration:", emailErr);
+    }
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
