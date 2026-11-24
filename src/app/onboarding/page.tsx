@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { DietaryIndicator, LoadingState } from "@/components/ui/states";
+import { TabloryLogo } from "@/components/ui/tablory-logo";
 import { formatCurrency, slugify, cn } from "@/lib/utils";
 
 const STEPS = [
@@ -60,6 +61,7 @@ export default function OnboardingPage() {
   const [initializing, setInitializing] = React.useState(true);
   const [step, setStep] = React.useState(1);
   const [saving, setSaving] = React.useState(false);
+  const [stepError, setStepError] = React.useState<string | null>(null);
 
   // Step 1: Restaurant fields
   const [restaurantId, setRestaurantId] = React.useState<string | null>(null);
@@ -160,16 +162,48 @@ export default function OnboardingPage() {
 
   async function handleStep1Submit(e: React.FormEvent) {
     e.preventDefault();
+    setStepError(null);
+
+    const trimmedName = name.trim();
+    const finalSlug = (slug || slugify(trimmedName)).trim();
+    const trimmedPhone = phone.trim();
+    const trimmedCity = city.trim();
+
+    if (trimmedName.length < 2) {
+      const msg = "Please enter your restaurant name (at least 2 characters).";
+      setStepError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (finalSlug.length < 2) {
+      const msg = "Please enter a valid menu URL slug (e.g. spice-garden).";
+      setStepError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (trimmedPhone.length < 7) {
+      const msg = "Please enter a valid contact phone number (at least 7 digits).";
+      setStepError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (!trimmedCity) {
+      const msg = "Please enter your restaurant city.";
+      setStepError(msg);
+      toast.error(msg);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
-        name,
-        slug: slug || slugify(name),
+        name: trimmedName,
+        slug: finalSlug,
         logoUrl,
         description,
-        phone,
+        phone: trimmedPhone,
         address,
-        city,
+        city: trimmedCity,
         state: stateName,
         country,
         currency,
@@ -190,11 +224,16 @@ export default function OnboardingPage() {
 
       setRestaurantId(data.restaurant.id);
       setSlug(data.restaurant.slug);
-      toast.success("Restaurant details saved!");
+      setStepError(null);
+      toast.success("Restaurant profile saved!", {
+        description: "Now let's organize your menu categories.",
+      });
       await loadTables();
       setStep(2);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save restaurant");
+      const msg = err instanceof Error ? err.message : "Could not save restaurant";
+      setStepError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -343,13 +382,13 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       {/* Top Bar */}
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#E15A2B] to-[#D97706] text-white shadow-xs">
-              <QrCode className="h-4 w-4" />
-            </div>
-            <span className="font-bold text-slate-900">Tablory Setup</span>
+            <TabloryLogo size="sm" />
+            <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-stone-600">
+              Setup
+            </span>
           </div>
           {restaurantId && (
             <Button variant="ghost" size="sm" asChild>
@@ -400,10 +439,18 @@ export default function OnboardingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleStep1Submit} className="space-y-5">
+              <form onSubmit={handleStep1Submit} noValidate className="space-y-5">
+                {stepError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {stepError}
+                  </div>
+                )}
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-name">Restaurant name *</Label>
+                    <Label htmlFor="r-name">
+                      Restaurant name <span className="text-brand">*</span>
+                    </Label>
                     <Input
                       id="r-name"
                       required
@@ -416,9 +463,11 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-slug">Menu URL slug *</Label>
+                    <Label htmlFor="r-slug">
+                      Menu URL slug <span className="text-brand">*</span>
+                    </Label>
                     <div className="flex items-center">
-                      <span className="inline-flex h-10 items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-100 px-3 text-xs text-slate-500">
+                      <span className="inline-flex h-10 items-center rounded-l-xl border border-r-0 border-stone-200 bg-stone-100 px-3 text-xs text-stone-500">
                         /menu/
                       </span>
                       <Input
@@ -437,7 +486,9 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Restaurant logo (optional)</Label>
+                  <Label>
+                    Restaurant logo <span className="text-xs font-normal text-stone-400">(Optional)</span>
+                  </Label>
                   <ImageUpload
                     value={logoUrl}
                     onChange={setLogoUrl}
@@ -447,7 +498,9 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="r-desc">Short description</Label>
+                  <Label htmlFor="r-desc">
+                    Short description <span className="text-xs font-normal text-stone-400">(Optional)</span>
+                  </Label>
                   <Textarea
                     id="r-desc"
                     placeholder="e.g. Authentic North Indian cuisine and tandoor specialties in Meerut."
@@ -458,16 +511,21 @@ export default function OnboardingPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-phone">Phone number</Label>
+                    <Label htmlFor="r-phone">
+                      Phone number <span className="text-brand">*</span>
+                    </Label>
                     <Input
                       id="r-phone"
+                      required
                       placeholder="+91 98100 00000"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-address">Street address</Label>
+                    <Label htmlFor="r-address">
+                      Street address <span className="text-xs font-normal text-stone-400">(Optional)</span>
+                    </Label>
                     <Input
                       id="r-address"
                       placeholder="Shop 12, Abu Lane"
@@ -479,8 +537,10 @@ export default function OnboardingPage() {
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-city">City</Label>
-                    <Input id="r-city" value={city} onChange={(e) => setCity(e.target.value)} />
+                    <Label htmlFor="r-city">
+                      City <span className="text-brand">*</span>
+                    </Label>
+                    <Input id="r-city" required value={city} onChange={(e) => setCity(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-state">State</Label>
@@ -603,19 +663,39 @@ export default function OnboardingPage() {
               )}
 
               <div className="flex items-center justify-between pt-2">
-                <Button variant="outline" onClick={() => setStep(1)}>
+                <Button variant="outline" onClick={() => { setStepError(null); setStep(1); }}>
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
-                <Button
-                  onClick={() => {
-                    if (categories[0] && !itemCategoryId) setItemCategoryId(categories[0].id);
-                    setStep(3);
-                  }}
-                >
-                  Continue to Menu Items
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {categories.length === 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setStepError(null);
+                        setStep(3);
+                      }}
+                    >
+                      Skip for now
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => {
+                      if (categories.length === 0) {
+                        toast.error("Please add at least 1 category or click 'Add Suggested Categories' first.");
+                        return;
+                      }
+                      if (categories[0] && !itemCategoryId) setItemCategoryId(categories[0].id);
+                      setStepError(null);
+                      setStep(3);
+                    }}
+                  >
+                    Continue to Menu Items
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

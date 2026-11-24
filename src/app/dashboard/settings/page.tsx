@@ -5,6 +5,7 @@ import { Check, Loader2, Save, Shield, CreditCard, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -185,9 +186,8 @@ export default function SettingsPage() {
             <form onSubmit={handlePasswordSave} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cur-pw">Current password</Label>
-                <Input
+                <PasswordInput
                   id="cur-pw"
-                  type="password"
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -195,9 +195,8 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new-pw">New password</Label>
-                <Input
+                <PasswordInput
                   id="new-pw"
-                  type="password"
                   required
                   minLength={8}
                   value={newPassword}
@@ -206,9 +205,8 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="conf-pw">Confirm new password</Label>
-                <Input
+                <PasswordInput
                   id="conf-pw"
-                  type="password"
                   required
                   minLength={8}
                   value={confirmPassword}
