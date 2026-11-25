@@ -64,16 +64,19 @@ export function ImageUpload({
       />
 
       {value ? (
-        <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="Uploaded preview"
-            className="h-16 w-16 rounded-lg border border-slate-200 object-cover bg-white"
+            className="h-16 w-16 shrink-0 rounded-xl border border-stone-200 object-cover bg-white shadow-2xs"
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-slate-700">{value}</p>
-            <div className="mt-2 flex gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <p className="text-xs font-bold text-stone-800">Image uploaded &amp; ready</p>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
               <Button
                 type="button"
                 variant="outline"
