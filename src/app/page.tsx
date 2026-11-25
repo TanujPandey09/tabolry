@@ -89,11 +89,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900 selection:bg-[#E15A2B] selection:text-white">
-      {/* Top Culinary Announcement */}
+      {/* Top Announcement */}
       <div className="bg-stone-950 px-4 py-2 text-center text-xs font-medium text-stone-300">
         <span className="inline-flex items-center gap-1.5">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Meerut &amp; NCR Restaurateur Pilot: 14-Day Free Trial + Complimentary Table QR Standee Design</span>
+          <span>Launch your QR digital menu &amp; table ordering in 5 minutes — 14-Day Free Trial</span>
           <Link href="/register" className="font-bold text-amber-400 underline underline-offset-2 ml-1 hover:text-amber-300">
             Start Free &rarr;
           </Link>
@@ -104,7 +104,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center">
-            <TabloryLogo showBadge />
+            <TabloryLogo />
           </Link>
 
           <nav className="hidden items-center gap-8 text-sm font-semibold text-stone-600 md:flex">
@@ -151,20 +151,19 @@ export default function HomePage() {
             {/* Left Column */}
             <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-orange-50 px-3.5 py-1 text-xs font-bold text-orange-950 shadow-2xs">
-                <Sparkles className="h-3.5 w-3.5 text-[#E15A2B]" />
-                <span>Culinary QR Menu &amp; Kitchen Ordering Platform</span>
+                <Sparkles className="h-3.5 w-3.5 text-brand" />
+                <span>QR Menus &bull; Table Ordering &bull; Live Kitchen Alerts</span>
               </div>
 
-              <h1 className="text-4xl font-black tracking-tight text-stone-950 sm:text-5xl lg:text-6xl lg:leading-[1.12]">
-                Transform Every Dining Table into a{" "}
+              <h1 className="text-4xl font-black tracking-tight text-stone-950 sm:text-5xl lg:text-6xl lg:leading-[1.1]">
+                Every Table Has a Story.{" "}
                 <span className="bg-gradient-to-r from-[#E15A2B] via-[#D97706] to-amber-600 bg-clip-text text-transparent">
-                  Digital Dining
-                </span>{" "}
-                Experience.
+                  Serve It Faster.
+                </span>
               </h1>
 
               <p className="text-base sm:text-lg leading-relaxed text-stone-600 max-w-2xl mx-auto lg:mx-0">
-                Eliminate expensive laminated reprints. Diners scan a sleek table QR code, browse high-res culinary photos, and place orders directly to your kitchen with instant UPI or Cash at Table.
+                Turn every table QR scan into instant kitchen orders. Guests browse rich dish photos, order right from their seat, and pay via UPI or Cash—with zero app downloads and zero menu reprints.
               </p>
 
               {/* Action Buttons */}
@@ -560,16 +559,17 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-stone-200 bg-white py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-xs text-stone-500 sm:flex-row sm:px-6">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
             <TabloryLogo size="sm" />
-            <span>· Every Table Has a Story. Serve It Faster.</span>
+            <span>&middot; Every Table Has a Story. Serve It Faster.</span>
+            <span className="text-stone-400">&copy; {new Date().getFullYear()} Tablory. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6 font-medium">
             <Link href="/login" className="hover:text-stone-900">
               Sign In
             </Link>
             <Link href="/register" className="hover:text-stone-900">
-              Create Restaurant
+              Start Free Trial
             </Link>
             <Link href="/menu/spice-garden-demo" target="_blank" className="hover:text-stone-900">
               Live Demo
