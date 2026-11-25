@@ -23,26 +23,16 @@ export function TabloryLogo({
     <div className={cn("inline-flex items-center gap-2.5 select-none", className)}>
       <div
         className={cn(
-          "relative flex shrink-0 items-center justify-center bg-gradient-to-tr from-brand to-brand-accent shadow-sm shadow-orange-950/10",
+          "relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm shadow-orange-950/10",
           boxSize
         )}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
-          aria-hidden="true"
-        >
-          <circle cx="8" cy="8" r="2.2" fill="#FFFFFF" />
-          <circle cx="16" cy="8" r="2.2" fill="#FFFFFF" />
-          <circle cx="8" cy="16" r="2.2" fill="#FFFFFF" />
-          <path
-            d="M14 16H16.8C17.46 16 18 15.46 18 14.8V12"
-            stroke="#FFFFFF"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-        </svg>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/favicon.png"
+          alt="Tablory"
+          className="h-full w-full object-cover scale-110"
+        />
       </div>
 
       {showWordmark && (
