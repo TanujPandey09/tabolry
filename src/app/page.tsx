@@ -558,22 +558,54 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-stone-200 bg-white py-10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-xs text-stone-500 sm:flex-row sm:px-6">
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <TabloryLogo size="sm" />
-            <span>&middot; Every Table Has a Story. Serve It Faster.</span>
-            <span className="text-stone-400">&copy; {new Date().getFullYear()} Tablory. All rights reserved.</span>
+        <div className="mx-auto max-w-7xl px-4 text-xs text-stone-500 sm:px-6">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <TabloryLogo size="sm" />
+              <span>&middot; Every Table Has a Story. Serve It Faster.</span>
+            </div>
+            <div className="flex items-center gap-6 font-medium">
+              <Link href="/login" className="hover:text-stone-900">
+                Sign In
+              </Link>
+              <Link href="/register" className="hover:text-stone-900">
+                Start Free Trial
+              </Link>
+              <Link href="/menu/spice-garden-demo" target="_blank" className="hover:text-stone-900">
+                Live Demo
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-6 font-medium">
-            <Link href="/login" className="hover:text-stone-900">
-              Sign In
-            </Link>
-            <Link href="/register" className="hover:text-stone-900">
-              Start Free Trial
-            </Link>
-            <Link href="/menu/spice-garden-demo" target="_blank" className="hover:text-stone-900">
-              Live Demo
-            </Link>
+
+          <div className="mt-6 flex flex-col items-center justify-between gap-2 border-t border-stone-100 pt-5 text-center sm:flex-row sm:text-left">
+            <p className="text-stone-400">
+              &copy; {new Date().getFullYear()} Tablory. All rights reserved.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-stone-500">
+              <span>
+                Designed &amp; Developed by{" "}
+                <a
+                  href="https://tanujbuilds.site"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-stone-800 underline decoration-stone-300 underline-offset-2 transition hover:text-brand hover:decoration-brand"
+                >
+                  Tanuj Pandey
+                </a>
+              </span>
+              <span className="hidden sm:inline text-stone-300">&bull;</span>
+              <span>
+                Independent Product by{" "}
+                <a
+                  href="https://tanujbuilds.site/agency"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-stone-800 underline decoration-stone-300 underline-offset-2 transition hover:text-brand hover:decoration-brand"
+                >
+                  NovaStack Studio
+                </a>
+              </span>
+            </div>
           </div>
         </div>
       </footer>
