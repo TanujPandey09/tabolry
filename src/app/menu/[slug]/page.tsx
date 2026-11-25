@@ -24,6 +24,8 @@ export default async function PublicRestaurantMenuPage({
       coverImageUrl: true,
       description: true,
       phone: true,
+      whatsappNumber: true,
+      upiId: true,
       address: true,
       city: true,
       state: true,

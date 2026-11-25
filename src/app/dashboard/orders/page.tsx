@@ -372,6 +372,23 @@ export default function DashboardOrdersPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      <a
+                        href={`https://wa.me/${(order.customerPhone || "").replace(/\D/g, "")}?text=${encodeURIComponent(
+                          `🧾 *Digital Bill - Order #${order.orderNumber}*\n${
+                            order.table ? `Table ${order.table.tableNumber}\n` : ""
+                          }\n${order.items
+                            .map((i) => `• ${i.quantity}x ${i.name} — ₹${Number(i.subtotal).toFixed(0)}`)
+                            .join("\n")}\n\n*Total: ₹${Number(order.totalAmount).toFixed(0)}*\nStatus: ${
+                            order.paymentStatus === "PAID" ? "✅ Paid" : "⏳ Payment Pending"
+                          }`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-100 transition"
+                        title="Send digital bill on WhatsApp"
+                      >
+                        WhatsApp Bill
+                      </a>
                       <button
                         type="button"
                         onClick={() => togglePayment(order.id, order.paymentStatus)}

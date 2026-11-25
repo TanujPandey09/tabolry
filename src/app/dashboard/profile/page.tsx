@@ -25,6 +25,8 @@ export default function RestaurantProfilePage() {
     coverImageUrl: "",
     description: "",
     phone: "",
+    whatsappNumber: "",
+    upiId: "",
     address: "",
     city: "",
     state: "",
@@ -48,6 +50,8 @@ export default function RestaurantProfilePage() {
         coverImageUrl: r.coverImageUrl || "",
         description: r.description || "",
         phone: r.phone || "",
+        whatsappNumber: r.whatsappNumber || "",
+        upiId: r.upiId || "",
         address: r.address || "",
         city: r.city || "",
         state: r.state || "",
@@ -180,6 +184,24 @@ export default function RestaurantProfilePage() {
                   id="phone"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="whatsappNumber">WhatsApp Orders Number (with country code)</Label>
+                <Input
+                  id="whatsappNumber"
+                  placeholder="e.g. 919810000000"
+                  value={form.whatsappNumber}
+                  onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value.replace(/[^0-9+]/g, "") })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="upiId">Merchant UPI ID (Direct 0% Fee Payments)</Label>
+                <Input
+                  id="upiId"
+                  placeholder="e.g. yourcafe@okaxis"
+                  value={form.upiId}
+                  onChange={(e) => setForm({ ...form, upiId: e.target.value.trim() })}
                 />
               </div>
               <div className="space-y-1.5">

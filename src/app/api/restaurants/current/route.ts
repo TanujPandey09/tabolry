@@ -92,6 +92,10 @@ export async function PATCH(request: Request) {
         }),
         ...(data.description !== undefined && { description: data.description || null }),
         ...(data.phone !== undefined && { phone: data.phone || null }),
+        ...(data.whatsappNumber !== undefined && {
+          whatsappNumber: data.whatsappNumber || null,
+        }),
+        ...(data.upiId !== undefined && { upiId: data.upiId || null }),
         ...(data.address !== undefined && { address: data.address || null }),
         ...(data.city !== undefined && { city: data.city || null }),
         ...(data.state !== undefined && { state: data.state || null }),

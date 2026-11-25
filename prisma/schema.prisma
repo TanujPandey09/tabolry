@@ -107,6 +107,8 @@ model Restaurant {
   coverImageUrl       String?
   description         String?
   phone               String?
+  whatsappNumber      String?
+  upiId               String?
   address             String?
   city                String?
   state               String?

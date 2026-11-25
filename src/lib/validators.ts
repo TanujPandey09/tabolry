@@ -42,6 +42,16 @@ export const createRestaurantSchema = z.object({
   coverImageUrl: z.string().trim().url().optional().or(z.literal("")).nullable(),
   description: z.string().trim().max(500).optional().nullable(),
   phone: z.string().trim().max(25).optional().nullable(),
+  whatsappNumber: z.string().trim().max(25).optional().nullable(),
+  upiId: z
+    .string()
+    .trim()
+    .refine(
+      (v) => v === "" || /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(v),
+      "Enter a valid UPI ID (e.g. yourcafe@okaxis)"
+    )
+    .optional()
+    .nullable(),
   address: z.string().trim().max(200).optional().nullable(),
   city: z.string().trim().max(80).optional().nullable(),
   state: z.string().trim().max(80).optional().nullable(),

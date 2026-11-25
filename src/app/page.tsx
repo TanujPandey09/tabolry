@@ -498,18 +498,18 @@ export default function HomePage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-[#E15A2B]">Small Restaurants &amp; Cafes</span>
                 <h3 className="text-xl font-bold text-stone-900 mt-1">Starter</h3>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-stone-950">₹199</span>
+                  <span className="text-4xl font-black text-stone-950">₹499</span>
                   <span className="text-xs text-stone-500">/ month</span>
                 </div>
-                <p className="mt-2 text-xs text-stone-600">Ideal for bistros, dhabas, and neighborhood cafes.</p>
+                <p className="mt-2 text-xs text-stone-600">Ideal for cafes, bistros, and neighborhood dining.</p>
                 <div className="mt-6 space-y-3 text-xs text-stone-700">
                   {[
                     "1 restaurant location",
-                    "Up to 25 table QR codes",
+                    "Up to 20 table QR codes",
                     "Live Table Ordering & KDS",
-                    "UPI QR code settlement",
+                    "Direct Merchant UPI QR (0% fee)",
+                    "WhatsApp Order & Digital Bill",
                     "Printable A5 table tent PDFs",
-                    "Priority WhatsApp support",
                   ].map((f) => (
                     <div key={f} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -529,17 +529,17 @@ export default function HomePage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-400">Family Dining</span>
                 <h3 className="text-xl font-bold text-stone-900 mt-1">Growth</h3>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-stone-950">₹399</span>
+                  <span className="text-4xl font-black text-stone-950">₹999</span>
                   <span className="text-xs text-stone-500">/ month</span>
                 </div>
-                <p className="mt-2 text-xs text-stone-600">For multi-floor dining &amp; high volume restaurants.</p>
+                <p className="mt-2 text-xs text-stone-600">For multi-floor dining &amp; high-volume restaurants.</p>
                 <div className="mt-6 space-y-3 text-xs text-stone-700">
                   {[
                     "Up to 60 table QR codes",
                     "Bulk PDF print generator",
                     "All 3 professional templates",
                     "Real QR scan analytics & graphs",
-                    "Dedicated onboarding manager",
+                    "Priority WhatsApp support",
                   ].map((f) => (
                     <div key={f} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-emerald-600 shrink-0" />

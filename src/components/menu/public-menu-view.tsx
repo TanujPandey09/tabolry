@@ -66,6 +66,8 @@ export interface PublicMenuRestaurant {
   coverImageUrl: string | null;
   description: string | null;
   phone: string | null;
+  whatsappNumber?: string | null;
+  upiId?: string | null;
   address: string | null;
   city: string | null;
   state: string | null;
@@ -240,7 +242,8 @@ export function PublicMenuView({
   React.useEffect(() => {
     let cancelled = false;
     if (activeOrder && activeOrder.paymentMethod === "UPI_ONLINE" && activeOrder.paymentStatus !== "PAID") {
-      const upiUri = `upi://pay?pa=restaurant@upi&pn=${encodeURIComponent(
+      const payeeUpi = restaurant.upiId?.trim() || "restaurant@upi";
+      const upiUri = `upi://pay?pa=${encodeURIComponent(payeeUpi)}&pn=${encodeURIComponent(
         restaurant.name
       )}&am=${activeOrder.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
         `Order ${activeOrder.orderNumber}`
@@ -1570,7 +1573,23 @@ export function PublicMenuView({
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                {(restaurant.whatsappNumber || restaurant.phone) && (
+                  <a
+                    href={`https://wa.me/${(restaurant.whatsappNumber || restaurant.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(
+                      `🍽️ *New Order #${activeOrder.orderNumber}*\n${
+                        activeOrder.tableNumber ? `Table: *${activeOrder.tableNumber}*\n` : ""
+                      }\n${(activeOrder.items || [])
+                        .map((i) => `• ${i.quantity}x ${i.name} (${formatCurrency(i.subtotal, restaurant.currency)})`)
+                        .join("\n")}\n\n*Total: ${formatCurrency(activeOrder.totalAmount, restaurant.currency)}*`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 px-3 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                  >
+                    Send on WhatsApp
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => setOrderStatusOpen(false)}
