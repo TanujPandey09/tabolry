@@ -87,6 +87,7 @@ export async function POST(request: Request) {
         name: data.name,
         description: data.description || null,
         imageUrl: data.imageUrl || null,
+        galleryImages: data.galleryImages ?? [],
         price: data.price,
         dietaryType: data.dietaryType,
         isAvailable: data.isAvailable,

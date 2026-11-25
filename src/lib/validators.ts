@@ -113,6 +113,18 @@ export const createMenuItemSchema = z.object({
     )
     .optional()
     .nullable(),
+  galleryImages: z
+    .array(
+      z
+        .string()
+        .trim()
+        .refine(
+          (v) => v.startsWith("/") || v.startsWith("http://") || v.startsWith("https://"),
+          "Invalid gallery image URL"
+        )
+    )
+    .max(4, "Maximum 4 additional photos allowed")
+    .optional(),
   price: z.coerce.number().min(0, "Price must be 0 or greater").max(999999),
   categoryId: z.string().min(1).optional().nullable(),
   dietaryType: z.enum(["VEG", "NON_VEG", "EGG"]).default("VEG"),

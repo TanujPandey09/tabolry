@@ -67,6 +67,7 @@ export async function PATCH(
         ...(data.name !== undefined && { name: data.name }),
         ...(data.description !== undefined && { description: data.description || null }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl || null }),
+        ...(data.galleryImages !== undefined && { galleryImages: data.galleryImages }),
         ...(data.price !== undefined && { price: data.price }),
         ...(categoryUpdate !== undefined && { categoryId: categoryUpdate }),
         ...(data.dietaryType !== undefined && { dietaryType: data.dietaryType }),

@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ImageUpload } from "@/components/ui/image-upload";
+import { MultiImageUpload } from "@/components/ui/multi-image-upload";
 import { DietaryIndicator, EmptyState, ErrorState, TableSkeleton } from "@/components/ui/states";
 import { formatCurrency } from "@/lib/utils";
 
@@ -49,6 +49,7 @@ interface MenuItem {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  galleryImages?: string[];
   price: number;
   categoryId: string | null;
   dietaryType: "VEG" | "NON_VEG" | "EGG";
@@ -80,7 +81,7 @@ export default function MenuManagementPage() {
     price: "",
     categoryId: "",
     dietaryType: "VEG" as "VEG" | "NON_VEG" | "EGG",
-    imageUrl: "",
+    photos: [] as string[],
     isAvailable: true,
   });
 
@@ -121,7 +122,7 @@ export default function MenuManagementPage() {
       price: "",
       categoryId: categories[0]?.id || "",
       dietaryType: "VEG",
-      imageUrl: "",
+      photos: [],
       isAvailable: true,
     });
     setDialogOpen(true);
@@ -129,13 +130,17 @@ export default function MenuManagementPage() {
 
   function openEdit(item: MenuItem) {
     setEditing(item);
+    const combinedPhotos = [
+      ...(item.imageUrl ? [item.imageUrl] : []),
+      ...(item.galleryImages || []),
+    ].slice(0, 4);
     setForm({
       name: item.name,
       description: item.description || "",
       price: String(item.price),
       categoryId: item.categoryId || "",
       dietaryType: item.dietaryType,
-      imageUrl: item.imageUrl || "",
+      photos: combinedPhotos,
       isAvailable: item.isAvailable,
     });
     setDialogOpen(true);
@@ -151,7 +156,8 @@ export default function MenuManagementPage() {
         price: Number(form.price),
         categoryId: form.categoryId || null,
         dietaryType: form.dietaryType,
-        imageUrl: form.imageUrl || null,
+        imageUrl: form.photos[0] || null,
+        galleryImages: form.photos.slice(1),
         isAvailable: form.isAvailable,
       };
 
@@ -524,12 +530,12 @@ export default function MenuManagementPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Food Photo</Label>
-              <ImageUpload
-                value={form.imageUrl}
-                onChange={(url) => setForm({ ...form, imageUrl: url })}
-                folder="menu"
-                label="Upload dish photo"
+              <Label>Dish Photos (up to 4)</Label>
+              <MultiImageUpload
+                value={form.photos}
+                onChange={(photos) => setForm({ ...form, photos })}
+                folder="menu-items"
+                maxImages={4}
               />
             </div>
 

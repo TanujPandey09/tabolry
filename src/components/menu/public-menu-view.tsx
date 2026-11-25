@@ -47,6 +47,7 @@ export interface PublicMenuItem {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  galleryImages?: string[];
   price: number;
   dietaryType: "VEG" | "NON_VEG" | "EGG";
   isAvailable: boolean;
@@ -133,6 +134,7 @@ export function PublicMenuView({
   const [selectedDish, setSelectedDish] = React.useState<
     (PublicMenuItem & { categoryName: string }) | null
   >(null);
+  const [activeDishPhotoIdx, setActiveDishPhotoIdx] = React.useState(0);
   const [menuDrawerOpen, setMenuDrawerOpen] = React.useState(false);
   const [infoOpen, setInfoOpen] = React.useState(false);
   const [shortlistOpen, setShortlistOpen] = React.useState(false);
@@ -880,9 +882,10 @@ export function PublicMenuView({
                   return (
                     <article
                       key={item.id}
-                      onClick={() =>
-                        setSelectedDish({ ...item, categoryName: cat.name })
-                      }
+                      onClick={() => {
+                        setActiveDishPhotoIdx(0);
+                        setSelectedDish({ ...item, categoryName: cat.name });
+                      }}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
@@ -1019,11 +1022,15 @@ export function PublicMenuView({
                               !item.isAvailable && "grayscale"
                             )}
                           />
-                          {!item.isAvailable && (
+                          {!item.isAvailable ? (
                             <div className="absolute inset-x-0 bottom-0 bg-slate-900/80 backdrop-blur-xs py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
                               Sold Out
                             </div>
-                          )}
+                          ) : (item.galleryImages?.length || 0) > 0 ? (
+                            <span className="absolute bottom-1.5 right-1.5 rounded-full bg-stone-950/75 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                              +{(item.galleryImages?.length || 0)} photos
+                            </span>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-2xl border border-stone-200/60 bg-gradient-to-br from-stone-50 to-stone-100 text-stone-400">
@@ -1140,33 +1147,76 @@ export function PublicMenuView({
         <DialogContent className="max-w-md overflow-hidden p-0">
           {selectedDish && (
             <div>
-              {selectedDish.imageUrl ? (
-                <div className="relative h-56 w-full bg-slate-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={selectedDish.imageUrl}
-                    alt={selectedDish.name}
-                    className={cn(
-                      "h-full w-full object-cover",
-                      !selectedDish.isAvailable && "grayscale"
-                    )}
-                  />
-                  {!selectedDish.isAvailable && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45">
-                      <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-                        Currently Sold Out
-                      </span>
+              {(() => {
+                const dishPhotos = [
+                  ...(selectedDish.imageUrl ? [selectedDish.imageUrl] : []),
+                  ...(selectedDish.galleryImages || []),
+                ];
+                const currentPhoto = dishPhotos[activeDishPhotoIdx] || dishPhotos[0];
+
+                if (dishPhotos.length === 0) {
+                  return (
+                    <div
+                      className="flex h-28 items-center justify-center"
+                      style={{ backgroundColor: `${accent}14` }}
+                    >
+                      <Utensils className="h-10 w-10" style={{ color: accent }} />
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className="flex h-28 items-center justify-center"
-                  style={{ backgroundColor: `${accent}14` }}
-                >
-                  <Utensils className="h-10 w-10" style={{ color: accent }} />
-                </div>
-              )}
+                  );
+                }
+
+                return (
+                  <div className="bg-stone-100">
+                    <div className="relative h-60 w-full overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={currentPhoto}
+                        alt={selectedDish.name}
+                        className={cn(
+                          "h-full w-full object-cover",
+                          !selectedDish.isAvailable && "grayscale"
+                        )}
+                      />
+                      {dishPhotos.length > 1 && (
+                        <span className="absolute right-3 bottom-3 rounded-full bg-stone-950/75 px-2.5 py-0.5 text-[11px] font-bold text-white backdrop-blur-xs">
+                          {activeDishPhotoIdx + 1} / {dishPhotos.length}
+                        </span>
+                      )}
+                      {!selectedDish.isAvailable && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45">
+                          <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
+                            Currently Sold Out
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {dishPhotos.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto bg-white px-4 py-2.5 border-b border-stone-100">
+                        {dishPhotos.map((photoUrl, idx) => (
+                          <button
+                            key={`${photoUrl}-${idx}`}
+                            type="button"
+                            onClick={() => setActiveDishPhotoIdx(idx)}
+                            className={cn(
+                              "h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition cursor-pointer",
+                              idx === activeDishPhotoIdx
+                                ? "border-[#E15A2B] ring-2 ring-[#E15A2B]/25"
+                                : "border-transparent opacity-65 hover:opacity-100"
+                            )}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={photoUrl}
+                              alt={`${selectedDish.name} ${idx + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="p-5 space-y-4">
                 <DialogHeader>

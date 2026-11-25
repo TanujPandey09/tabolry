@@ -174,9 +174,10 @@ model MenuItem {
   restaurantId String
   categoryId   String?
   name         String
-  description  String?
-  imageUrl     String?
-  price        Decimal     @db.Decimal(10, 2)
+  description   String?
+  imageUrl      String?
+  galleryImages String[]    @default([])
+  price         Decimal     @db.Decimal(10, 2)
   dietaryType  DietaryType @default(VEG)
   isAvailable  Boolean     @default(true)
   displayOrder Int         @default(0)
