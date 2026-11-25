@@ -284,9 +284,71 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
+
+        {/* Native-App-Style Mobile Bottom Navigation */}
+        <nav
+          aria-label="Mobile quick navigation"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/90 bg-white/95 backdrop-blur-md lg:hidden"
+        >
+          <div className="grid h-16 grid-cols-5 items-center px-1">
+            {navItems
+              .filter((item) =>
+                [
+                  "/dashboard",
+                  "/dashboard/orders",
+                  "/dashboard/menu",
+                  "/dashboard/tables",
+                  "/admin",
+                  "/admin/restaurants",
+                  "/admin/plans",
+                ].includes(item.href)
+              )
+              .slice(0, 4)
+              .map((item) => {
+                const Icon = ICONS[item.icon];
+                const isActive =
+                  item.href === "/dashboard" || item.href === "/admin"
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 py-1.5 text-[11px] font-semibold transition-colors",
+                      isActive ? "text-brand" : "text-stone-500 hover:text-stone-900"
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", isActive && "stroke-[2.3]")} />
+                    <span className="truncate max-w-[64px]">
+                      {item.label === "Dashboard"
+                        ? "Home"
+                        : item.label === "Live Orders"
+                          ? "Orders"
+                          : item.label === "Menu Management"
+                            ? "Menu"
+                            : item.label === "Tables & QR Codes"
+                              ? "Tables"
+                              : item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="flex flex-col items-center justify-center gap-1 py-1.5 text-[11px] font-semibold text-stone-500 hover:text-stone-900 cursor-pointer"
+            >
+              <Menu className="h-5 w-5" />
+              <span>More</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );

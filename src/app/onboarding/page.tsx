@@ -24,6 +24,12 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { DietaryIndicator, LoadingState } from "@/components/ui/states";
 import { TabloryLogo } from "@/components/ui/tablory-logo";
+import {
+  onboardingRestaurantSchema,
+  onboardingCategorySchema,
+  onboardingMenuItemSchema,
+  onboardingTableSchema,
+} from "@/lib/validators";
 import { formatCurrency, slugify, cn } from "@/lib/utils";
 
 const STEPS = [
@@ -62,6 +68,16 @@ export default function OnboardingPage() {
   const [step, setStep] = React.useState(1);
   const [saving, setSaving] = React.useState(false);
   const [stepError, setStepError] = React.useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   // Step 1: Restaurant fields
   const [restaurantId, setRestaurantId] = React.useState<string | null>(null);
@@ -163,51 +179,47 @@ export default function OnboardingPage() {
   async function handleStep1Submit(e: React.FormEvent) {
     e.preventDefault();
     setStepError(null);
+    setFieldErrors({});
 
-    const trimmedName = name.trim();
-    const finalSlug = (slug || slugify(trimmedName)).trim();
-    const trimmedPhone = phone.trim();
-    const trimmedCity = city.trim();
+    const candidateSlug = (slug || slugify(name)).trim().toLowerCase();
+    const parsed = onboardingRestaurantSchema.safeParse({
+      name,
+      slug: candidateSlug,
+      phone,
+      city,
+      state: stateName,
+      country,
+      currency,
+      primaryColor,
+    });
 
-    if (trimmedName.length < 2) {
-      const msg = "Please enter your restaurant name (at least 2 characters).";
-      setStepError(msg);
-      toast.error(msg);
-      return;
-    }
-    if (finalSlug.length < 2) {
-      const msg = "Please enter a valid menu URL slug (e.g. spice-garden).";
-      setStepError(msg);
-      toast.error(msg);
-      return;
-    }
-    if (trimmedPhone.length < 7) {
-      const msg = "Please enter a valid contact phone number (at least 7 digits).";
-      setStepError(msg);
-      toast.error(msg);
-      return;
-    }
-    if (!trimmedCity) {
-      const msg = "Please enter your restaurant city.";
-      setStepError(msg);
-      toast.error(msg);
+    if (!parsed.success) {
+      const nextErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] || "form");
+        if (!nextErrors[key]) nextErrors[key] = issue.message;
+      }
+      setFieldErrors(nextErrors);
+      const firstMsg = parsed.error.issues[0]?.message || "Please check the highlighted fields.";
+      setStepError(firstMsg);
+      toast.error(firstMsg);
       return;
     }
 
     setSaving(true);
     try {
       const payload = {
-        name: trimmedName,
-        slug: finalSlug,
+        name: parsed.data.name,
+        slug: parsed.data.slug,
         logoUrl,
         description,
-        phone: trimmedPhone,
+        phone: parsed.data.phone,
         address,
-        city: trimmedCity,
-        state: stateName,
-        country,
-        currency,
-        primaryColor,
+        city: parsed.data.city,
+        state: parsed.data.state || "",
+        country: parsed.data.country,
+        currency: parsed.data.currency,
+        primaryColor: parsed.data.primaryColor,
       };
 
       const res = await fetch(
@@ -225,6 +237,7 @@ export default function OnboardingPage() {
       setRestaurantId(data.restaurant.id);
       setSlug(data.restaurant.slug);
       setStepError(null);
+      setFieldErrors({});
       toast.success("Restaurant profile saved!", {
         description: "Now let's organize your menu categories.",
       });
@@ -261,13 +274,18 @@ export default function OnboardingPage() {
 
   async function addCategory(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCatName.trim()) return;
+    const parsed = onboardingCategorySchema.safeParse({ name: newCatName });
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message || "Enter a valid category name";
+      toast.error(msg);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newCatName.trim() }),
+        body: JSON.stringify({ name: parsed.data.name }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add category");
@@ -291,15 +309,24 @@ export default function OnboardingPage() {
 
   async function addMenuItem(e: React.FormEvent) {
     e.preventDefault();
+    const parsed = onboardingMenuItemSchema.safeParse({
+      name: itemName,
+      price: itemPrice,
+    });
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message || "Enter a valid dish name and price";
+      toast.error(msg);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/menu-items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: itemName.trim(),
+          name: parsed.data.name,
           description: itemDesc.trim() || null,
-          price: Number(itemPrice),
+          price: parsed.data.price,
           categoryId: itemCategoryId || null,
           dietaryType: itemDiet,
           imageUrl: itemImage || null,
@@ -323,14 +350,19 @@ export default function OnboardingPage() {
 
   async function addTable(e: React.FormEvent) {
     e.preventDefault();
-    if (!tableNumber.trim()) return;
+    const parsed = onboardingTableSchema.safeParse({ tableNumber });
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message || "Enter a valid table number";
+      toast.error(msg);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/tables", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tableNumber: tableNumber.trim(),
+          tableNumber: parsed.data.tableNumber,
           label: tableLabel.trim() || null,
         }),
       });
@@ -398,9 +430,25 @@ export default function OnboardingPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-4 pt-8">
-        {/* Stepper */}
-        <ol className="mb-8 grid grid-cols-5 gap-2">
+      <div className="mx-auto max-w-4xl px-4 pt-5 sm:pt-8 pb-12">
+        {/* Mobile App-Style Progress Header */}
+        <div className="mb-5 sm:hidden rounded-2xl border border-stone-200/80 bg-white p-3.5 shadow-2xs">
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-brand">
+              Step {step} of {STEPS.length}
+            </span>
+            <span className="text-stone-900">{STEPS[step - 1]?.label}</span>
+          </div>
+          <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+            <div
+              className="h-full rounded-full bg-brand transition-all duration-300"
+              style={{ width: `${(step / STEPS.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Desktop Stepper */}
+        <ol className="mb-8 hidden sm:grid grid-cols-5 gap-2">
           {STEPS.map((s) => {
             const done = step > s.num;
             const active = step === s.num;
@@ -455,12 +503,20 @@ export default function OnboardingPage() {
                       id="r-name"
                       required
                       placeholder="e.g. Spice Garden"
+                      className={cn("text-base sm:text-sm", fieldErrors.name && "border-red-400 focus-visible:ring-red-200")}
                       value={name}
                       onChange={(e) => {
+                        clearFieldError("name");
                         setName(e.target.value);
-                        if (!slugEdited) setSlug(slugify(e.target.value));
+                        if (!slugEdited) {
+                          clearFieldError("slug");
+                          setSlug(slugify(e.target.value));
+                        }
                       }}
                     />
+                    {fieldErrors.name && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.name}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-slug">
@@ -473,15 +529,19 @@ export default function OnboardingPage() {
                       <Input
                         id="r-slug"
                         required
-                        className="rounded-l-none"
+                        className={cn("rounded-l-none text-base sm:text-sm", fieldErrors.slug && "border-red-400 focus-visible:ring-red-200")}
                         placeholder="spice-garden"
                         value={slug}
                         onChange={(e) => {
+                          clearFieldError("slug");
                           setSlugEdited(true);
                           setSlug(slugify(e.target.value));
                         }}
                       />
                     </div>
+                    {fieldErrors.slug && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.slug}</p>
+                    )}
                   </div>
                 </div>
 
@@ -503,7 +563,8 @@ export default function OnboardingPage() {
                   </Label>
                   <Textarea
                     id="r-desc"
-                    placeholder="e.g. Authentic North Indian cuisine and tandoor specialties in Meerut."
+                    className="text-base sm:text-sm"
+                    placeholder="e.g. Authentic North Indian cuisine and tandoor specialties."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
@@ -516,11 +577,20 @@ export default function OnboardingPage() {
                     </Label>
                     <Input
                       id="r-phone"
+                      type="tel"
+                      inputMode="tel"
                       required
                       placeholder="+91 98100 00000"
+                      className={cn("text-base sm:text-sm", fieldErrors.phone && "border-red-400 focus-visible:ring-red-200")}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        clearFieldError("phone");
+                        setPhone(e.target.value.replace(/[^0-9+\s\-()]/g, ""));
+                      }}
                     />
+                    {fieldErrors.phone && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.phone}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-address">
@@ -528,7 +598,8 @@ export default function OnboardingPage() {
                     </Label>
                     <Input
                       id="r-address"
-                      placeholder="Shop 12, Abu Lane"
+                      className="text-base sm:text-sm"
+                      placeholder="Shop 12, Main Market"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                     />
@@ -540,34 +611,67 @@ export default function OnboardingPage() {
                     <Label htmlFor="r-city">
                       City <span className="text-brand">*</span>
                     </Label>
-                    <Input id="r-city" required value={city} onChange={(e) => setCity(e.target.value)} />
+                    <Input
+                      id="r-city"
+                      required
+                      className={cn("text-base sm:text-sm", fieldErrors.city && "border-red-400 focus-visible:ring-red-200")}
+                      value={city}
+                      onChange={(e) => {
+                        clearFieldError("city");
+                        setCity(e.target.value.replace(/[^a-zA-Z\s.\-']/g, ""));
+                      }}
+                    />
+                    {fieldErrors.city && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.city}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-state">State</Label>
                     <Input
                       id="r-state"
+                      className={cn("text-base sm:text-sm", fieldErrors.state && "border-red-400 focus-visible:ring-red-200")}
                       value={stateName}
-                      onChange={(e) => setStateName(e.target.value)}
+                      onChange={(e) => {
+                        clearFieldError("state");
+                        setStateName(e.target.value.replace(/[^a-zA-Z\s.\-']/g, ""));
+                      }}
                     />
+                    {fieldErrors.state && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.state}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-country">Country</Label>
                     <Input
                       id="r-country"
+                      className={cn("text-base sm:text-sm", fieldErrors.country && "border-red-400 focus-visible:ring-red-200")}
                       value={country}
-                      onChange={(e) => setCountry(e.target.value)}
+                      onChange={(e) => {
+                        clearFieldError("country");
+                        setCountry(e.target.value.replace(/[^a-zA-Z\s.\-']/g, ""));
+                      }}
                     />
+                    {fieldErrors.country && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.country}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="r-currency">Currency</Label>
+                    <Label htmlFor="r-currency">Currency (3-letter code)</Label>
                     <Input
                       id="r-currency"
+                      className={cn("text-base sm:text-sm uppercase", fieldErrors.currency && "border-red-400 focus-visible:ring-red-200")}
                       value={currency}
-                      onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))}
+                      onChange={(e) => {
+                        clearFieldError("currency");
+                        setCurrency(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3));
+                      }}
                     />
+                    {fieldErrors.currency && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.currency}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="r-color">Primary brand color</Label>
@@ -576,20 +680,29 @@ export default function OnboardingPage() {
                         id="r-color"
                         type="color"
                         value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="h-10 w-14 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                        onChange={(e) => {
+                          clearFieldError("primaryColor");
+                          setPrimaryColor(e.target.value);
+                        }}
+                        className="h-10 w-14 cursor-pointer rounded-xl border border-stone-200 bg-white p-1"
                       />
                       <Input
                         value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="font-mono"
+                        onChange={(e) => {
+                          clearFieldError("primaryColor");
+                          setPrimaryColor(e.target.value);
+                        }}
+                        className={cn("font-mono text-base sm:text-sm", fieldErrors.primaryColor && "border-red-400 focus-visible:ring-red-200")}
                       />
                     </div>
+                    {fieldErrors.primaryColor && (
+                      <p className="text-xs font-medium text-red-600">{fieldErrors.primaryColor}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <Button type="submit" disabled={saving}>
+                  <Button type="submit" disabled={saving} className="w-full sm:w-auto h-11 rounded-xl font-bold">
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                     Save &amp; Continue
                     <ArrowRight className="h-4 w-4" />
@@ -730,9 +843,11 @@ export default function OnboardingPage() {
                     <Input
                       required
                       type="number"
-                      min="0"
+                      inputMode="decimal"
+                      min="1"
                       step="0.5"
                       placeholder="260"
+                      className="text-base sm:text-sm"
                       value={itemPrice}
                       onChange={(e) => setItemPrice(e.target.value)}
                     />

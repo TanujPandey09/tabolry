@@ -146,3 +146,89 @@ export const adminPlanSchema = z.object({
   features: z.array(z.string().trim().min(1)).default([]),
   isActive: z.boolean().default(true),
 });
+
+const hasLetterRegex = /[a-zA-Z\u0900-\u097F]/;
+const locationTextRegex = /^[a-zA-Z\s.\-']+$/;
+const phoneFormatRegex = /^\+?[0-9\s\-()]{7,20}$/;
+
+export const onboardingRestaurantSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Restaurant name must be at least 2 characters")
+    .max(100, "Restaurant name is too long")
+    .refine((v) => hasLetterRegex.test(v), "Restaurant name must contain letters (not only numbers)"),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Menu URL slug must be at least 2 characters")
+    .max(60, "Menu URL slug is too long")
+    .regex(slugRegex, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  phone: z
+    .string()
+    .trim()
+    .regex(phoneFormatRegex, "Enter a valid phone number (digits only, optional + prefix)")
+    .refine((v) => {
+      const digits = v.replace(/\D/g, "").length;
+      return digits >= 10 && digits <= 15;
+    }, "Phone number must have 10 to 15 digits"),
+  city: z
+    .string()
+    .trim()
+    .min(2, "City must be at least 2 characters")
+    .max(80, "City name is too long")
+    .regex(locationTextRegex, "City name should contain only letters"),
+  state: z
+    .string()
+    .trim()
+    .max(80, "State name is too long")
+    .refine((v) => v === "" || locationTextRegex.test(v), "State name should contain only letters")
+    .optional(),
+  country: z
+    .string()
+    .trim()
+    .min(2, "Country must be at least 2 characters")
+    .max(80, "Country name is too long")
+    .regex(locationTextRegex, "Country name should contain only letters"),
+  currency: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{3}$/, "Currency must be a 3-letter code (e.g. INR, USD)"),
+  primaryColor: z
+    .string()
+    .trim()
+    .regex(hexColorRegex, "Primary color must be a valid hex code (e.g. #E15A2B)"),
+});
+
+export const onboardingCategorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Category name must be at least 2 characters")
+    .max(60, "Category name is too long")
+    .refine((v) => hasLetterRegex.test(v), "Category name must contain letters"),
+});
+
+export const onboardingMenuItemSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Dish name must be at least 2 characters")
+    .max(100, "Dish name is too long")
+    .refine((v) => hasLetterRegex.test(v), "Dish name must contain letters (not only numbers)"),
+  price: z.coerce
+    .number({ invalid_type_error: "Enter a valid numeric price" })
+    .positive("Price must be greater than 0")
+    .max(100000, "Price cannot exceed 100,000"),
+});
+
+export const onboardingTableSchema = z.object({
+  tableNumber: z
+    .string()
+    .trim()
+    .min(1, "Table number is required")
+    .max(15, "Table number is too long")
+    .regex(/^[a-zA-Z0-9\- ]+$/, "Use only letters, numbers, or hyphens (e.g. 1, A1, T-4)"),
+});
