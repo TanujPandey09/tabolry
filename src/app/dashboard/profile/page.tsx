@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { slugify } from "@/lib/utils";
 
@@ -194,10 +195,19 @@ export default function RestaurantProfilePage() {
             <div className="grid gap-4 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label htmlFor="city">City</Label>
-                <Input
+                <CityAutocomplete
                   id="city"
                   value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  onChange={(val) => setForm({ ...form, city: val })}
+                  onSelectLocation={(loc) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      city: loc.city,
+                      state: loc.state || prev.state,
+                      country: loc.country || prev.country,
+                      currency: loc.currency || prev.currency,
+                    }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">

@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { DietaryIndicator, LoadingState } from "@/components/ui/states";
 import { TabloryLogo } from "@/components/ui/tablory-logo";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import {
   onboardingRestaurantSchema,
   onboardingCategorySchema,
@@ -611,14 +612,24 @@ export default function OnboardingPage() {
                     <Label htmlFor="r-city">
                       City <span className="text-brand">*</span>
                     </Label>
-                    <Input
+                    <CityAutocomplete
                       id="r-city"
                       required
                       className={cn("text-base sm:text-sm", fieldErrors.city && "border-red-400 focus-visible:ring-red-200")}
                       value={city}
-                      onChange={(e) => {
+                      onChange={(val) => {
                         clearFieldError("city");
-                        setCity(e.target.value.replace(/[^a-zA-Z\s.\-']/g, ""));
+                        setCity(val.replace(/[^a-zA-Z\s.\-']/g, ""));
+                      }}
+                      onSelectLocation={(loc) => {
+                        clearFieldError("city");
+                        clearFieldError("state");
+                        clearFieldError("country");
+                        clearFieldError("currency");
+                        setCity(loc.city);
+                        if (loc.state) setStateName(loc.state);
+                        if (loc.country) setCountry(loc.country);
+                        if (loc.currency) setCurrency(loc.currency);
                       }}
                     />
                     {fieldErrors.city && (
