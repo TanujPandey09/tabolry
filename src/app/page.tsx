@@ -143,7 +143,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-14 pb-20 md:pt-24 md:pb-32">
+      <section className="relative overflow-hidden pt-10 pb-14 md:pt-16 md:pb-20">
         {/* 21st.dev / ReactBits Architectural Dot Grid + Warm Terracotta Spotlight */}
         <div
           aria-hidden="true"
@@ -396,7 +396,7 @@ export default function HomePage() {
       </section>
 
       {/* Pilot Proof Strip */}
-      <section className="border-y border-stone-200/80 bg-white py-8">
+      <section className="border-y border-stone-200/80 bg-white py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs font-bold uppercase tracking-wider text-stone-400 mb-6">
             Tested &amp; Trusted by restaurants, dhabas &amp; bistros across Western UP &amp; Delhi-NCR
@@ -419,54 +419,72 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 md:py-28 border-b border-stone-200/70">
+      {/* How It Works — Story Section */}
+      <section id="how-it-works" className="py-14 md:py-16 border-b border-stone-200/70">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center space-y-3">
+          <div className="max-w-2xl mx-auto text-center space-y-2.5">
             <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
-              5-Minute Setup
+              A Friday Night at Your Restaurant
             </Badge>
             <h2 className="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">
-              From Printed Menus to Live Table Orders in 3 Steps
+              Every Table Full. Zero Floor Chaos.
             </h2>
-            <p className="text-base text-stone-600">
-              No POS hardware, no app downloads, and no developer needed. Launch before tonight&rsquo;s dinner service.
+            <p className="text-sm sm:text-base text-stone-600">
+              See how one QR scan turns a crowded dinner rush into calm, faster service — from the moment guests sit down to the second they pay.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="relative mt-10 grid gap-6 md:grid-cols-3">
             {[
               {
                 step: "01",
-                icon: Utensils,
-                title: "Build Your Digital Menu",
-                desc: "Add your categories, dish photos, Veg/Non-Veg tags, and prices. Update stock or festival specials anytime in 2 seconds.",
+                time: "7:32 PM · Table 4 Arrives",
+                icon: QrCode,
+                title: "They Scan Instead of Waiting",
+                desc: "No waving for a waiter or sharing torn paper menus. Guests scan your Table 4 tent and browse dish photos on their phone in 2 seconds.",
+                outcome: "Zero wait time to start ordering",
               },
               {
                 step: "02",
-                icon: Printer,
-                title: "Print Table QR Tents",
-                desc: "Auto-generate unique QR codes for every table and download print-ready A5 table tent PDFs or high-res PNGs.",
+                time: "7:34 PM · Kitchen Chimes",
+                icon: Utensils,
+                title: "Order Hits the Chef Directly",
+                desc: "They tap Paneer Tikka & Dal Makhani. Your kitchen screen chimes instantly with Table 4's exact order — zero misheard items or lost KOT slips.",
+                outcome: "Faster prep, fewer mistakes",
               },
               {
                 step: "03",
+                time: "8:05 PM · Bill Settled",
                 icon: ShieldCheck,
-                title: "Receive Orders & UPI Payments",
-                desc: "Guests scan, order from their seat, and pay via your direct UPI QR or Cash while your kitchen tracks every dish live.",
+                title: "10-Second UPI & Happy Repeat Guests",
+                desc: "No waiting 15 minutes for the bill folder. Guests scan your direct UPI QR (0% fee), get a clean WhatsApp bill, and free up the table faster.",
+                outcome: "100% revenue stays with you",
               },
             ].map((item, idx) => (
               <Reveal key={item.step} delay={idx * 90}>
-                <div className="relative h-full rounded-3xl border border-stone-200/90 bg-white p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#E15A2B]">
-                      <item.icon className="h-6 w-6" />
+                <div className="relative flex h-full flex-col justify-between rounded-3xl border border-stone-200/90 bg-white p-6 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-[#E15A2B]">
+                        <Clock className="h-3 w-3" />
+                        {item.time}
+                      </span>
+                      <span className="text-2xl font-black tracking-tighter text-stone-200">
+                        {item.step}
+                      </span>
                     </div>
-                    <span className="text-3xl font-black tracking-tighter text-stone-200">
-                      {item.step}
-                    </span>
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-950 text-white">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-base font-bold text-stone-900">{item.title}</h3>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-stone-600">{item.desc}</p>
                   </div>
-                  <h3 className="mt-6 text-lg font-bold text-stone-900">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.desc}</p>
+                  <div className="mt-5 flex items-center gap-1.5 border-t border-stone-100 pt-3 text-xs font-semibold text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{item.outcome}</span>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -475,21 +493,21 @@ export default function HomePage() {
       </section>
 
       {/* Feature Grid */}
-      <section id="features" className="py-20 md:py-28">
+      <section id="features" className="py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center space-y-3">
+          <div className="max-w-3xl mx-auto text-center space-y-2.5">
             <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
               Real Hospitality Features
             </Badge>
             <h2 className="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">
               Engineered Specifically for Restaurant Floors
             </h2>
-            <p className="text-base text-stone-600">
+            <p className="text-sm sm:text-base text-stone-600">
               Designed for quick updates by restaurant managers — simple on desktop, effortless on smartphone screens.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 icon: QrCode,
@@ -537,9 +555,9 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="bg-white border-y border-stone-200/80 py-20 md:py-28">
+      <section id="pricing" className="bg-white border-y border-stone-200/80 py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-16">
+          <div className="text-center max-w-2xl mx-auto space-y-2.5 mb-10">
             <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
               Simple INR Pricing
             </Badge>
@@ -650,7 +668,7 @@ export default function HomePage() {
       </section>
 
       {/* Final High-Contrast CTA Banner */}
-      <section className="py-16 md:py-24 bg-[#FAF8F5]">
+      <section className="py-12 md:py-14 bg-[#FAF8F5]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="relative overflow-hidden rounded-3xl bg-stone-950 px-6 py-14 text-center text-white shadow-2xl sm:px-12 md:py-16">
