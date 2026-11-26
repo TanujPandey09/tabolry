@@ -167,7 +167,7 @@ export default function HomePage() {
 
               <h1 className="text-4xl font-black tracking-[-0.03em] text-stone-950 sm:text-5xl lg:text-[3.5rem] lg:leading-[1.06]">
                 Every Table Has a Story.{" "}
-                <span className="bg-gradient-to-r from-[#E15A2B] via-[#D97706] to-amber-600 bg-clip-text text-transparent">
+                <span className="font-serif italic font-semibold text-[#E15A2B]">
                   Serve It Faster.
                 </span>
               </h1>
@@ -423,14 +423,11 @@ export default function HomePage() {
       <section id="how-it-works" className="py-14 md:py-16 border-b border-stone-200/70">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center space-y-2.5">
-            <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
-              A Friday Night at Your Restaurant
-            </Badge>
             <h2 className="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">
               Every Table Full. Zero Floor Chaos.
             </h2>
             <p className="text-sm sm:text-base text-stone-600">
-              See how one QR scan turns a crowded dinner rush into calm, faster service — from the moment guests sit down to the second they pay.
+              See how one QR scan turns a crowded Friday dinner rush into calm, faster service — from the moment guests sit down to the second they pay.
             </p>
           </div>
 
@@ -496,9 +493,6 @@ export default function HomePage() {
       <section id="features" className="py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center space-y-2.5">
-            <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
-              Real Hospitality Features
-            </Badge>
             <h2 className="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">
               Engineered Specifically for Restaurant Floors
             </h2>
@@ -558,9 +552,6 @@ export default function HomePage() {
       <section id="pricing" className="bg-white border-y border-stone-200/80 py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto space-y-2.5 mb-10">
-            <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
-              Simple INR Pricing
-            </Badge>
             <h2 className="text-3xl font-black text-stone-950 sm:text-4xl">
               Transparent Plans with Zero Commission
             </h2>

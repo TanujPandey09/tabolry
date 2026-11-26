@@ -34,6 +34,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background-color: #e15a2b;
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid #e15a2b;
+  outline-offset: 2px;
+}
+
 /* Warm refined custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
