@@ -18,7 +18,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatWhatsAppPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/ui/states";
@@ -373,13 +373,13 @@ export default function DashboardOrdersPage() {
 
                     <div className="flex items-center gap-1.5">
                       <a
-                        href={`https://wa.me/${(order.customerPhone || "").replace(/\D/g, "")}?text=${encodeURIComponent(
-                          `🧾 *Digital Bill - Order #${order.orderNumber}*\n${
+                        href={`https://wa.me/${formatWhatsAppPhone(order.customerPhone)}?text=${encodeURIComponent(
+                          `*Digital Bill - Order #${order.orderNumber}*\n${
                             order.table ? `Table ${order.table.tableNumber}\n` : ""
                           }\n${order.items
-                            .map((i) => `• ${i.quantity}x ${i.name} — ₹${Number(i.subtotal).toFixed(0)}`)
+                            .map((i) => `- ${i.quantity}x ${i.name} — ₹${Number(i.subtotal).toFixed(0)}`)
                             .join("\n")}\n\n*Total: ₹${Number(order.totalAmount).toFixed(0)}*\nStatus: ${
-                            order.paymentStatus === "PAID" ? "✅ Paid" : "⏳ Payment Pending"
+                            order.paymentStatus === "PAID" ? "Paid" : "Payment Pending"
                           }`
                         )}`}
                         target="_blank"

@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { chimeEngine } from "@/lib/audio-chime";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatWhatsAppPhone, cn } from "@/lib/utils";
 import { DietaryIndicator } from "@/components/ui/states";
 import {
   Dialog,
@@ -1626,11 +1626,11 @@ export function PublicMenuView({
               <div className="flex flex-col sm:flex-row gap-2">
                 {(restaurant.whatsappNumber || restaurant.phone) && (
                   <a
-                    href={`https://wa.me/${(restaurant.whatsappNumber || restaurant.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(
-                      `🍽️ *New Order #${activeOrder.orderNumber}*\n${
+                    href={`https://wa.me/${formatWhatsAppPhone(restaurant.whatsappNumber || restaurant.phone)}?text=${encodeURIComponent(
+                      `*New Order #${activeOrder.orderNumber}* — ${restaurant.name}\n${
                         activeOrder.tableNumber ? `Table: *${activeOrder.tableNumber}*\n` : ""
                       }\n${(activeOrder.items || [])
-                        .map((i) => `• ${i.quantity}x ${i.name} (${formatCurrency(i.subtotal, restaurant.currency)})`)
+                        .map((i) => `- ${i.quantity}x ${i.name} (${formatCurrency(i.subtotal, restaurant.currency)})`)
                         .join("\n")}\n\n*Total: ${formatCurrency(activeOrder.totalAmount, restaurant.currency)}*`
                     )}`}
                     target="_blank"

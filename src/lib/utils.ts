@@ -92,3 +92,19 @@ export function getTrialDaysRemaining(trialEndsAt: Date | string | null | undefi
   const diffMs = end.getTime() - Date.now();
   return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 }
+
+/**
+ * Normalizes a phone number for https://wa.me/<digits> links.
+ * Strips non-digits and prepends India's 91 code when a 10-digit mobile number is provided.
+ */
+export function formatWhatsAppPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return `91${digits}`;
+  }
+  return digits;
+}
