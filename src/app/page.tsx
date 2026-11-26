@@ -564,7 +564,7 @@ export default function HomePage() {
               <TabloryLogo size="sm" />
               <span>&middot; Every Table Has a Story. Serve It Faster.</span>
             </div>
-            <div className="flex items-center gap-6 font-medium">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-medium">
               <Link href="/login" className="hover:text-stone-900">
                 Sign In
               </Link>
@@ -573,6 +573,18 @@ export default function HomePage() {
               </Link>
               <Link href="/menu/spice-garden-demo" target="_blank" className="hover:text-stone-900">
                 Live Demo
+              </Link>
+              <Link href="/privacy" className="hover:text-stone-900">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="hover:text-stone-900">
+                Terms
+              </Link>
+              <Link href="/refund-policy" className="hover:text-stone-900">
+                Refund Policy
+              </Link>
+              <Link href="/contact" className="hover:text-stone-900">
+                Contact
               </Link>
             </div>
           </div>
