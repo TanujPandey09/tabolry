@@ -33,19 +33,26 @@ function formatTimeAgo(dateString: string): string {
   return `${Math.floor(diffHr / 24)}d ago`;
 }
 
-export function NotificationCenter() {
+interface NotificationContextValue {
+  notifications: DashboardNotificationItem[];
+  readIds: Set<string>;
+  soundOn: boolean;
+  toggleSound: () => void;
+  markAllRead: () => void;
+  markSingleRead: (id: string) => void;
+}
+
+const NotificationContext = React.createContext<NotificationContextValue | null>(null);
+
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState<DashboardNotificationItem[]>([]);
-  const [filter, setFilter] = React.useState<"ALL" | "ORDERS" | "PAYMENTS" | "SCANS">("ALL");
   const [soundOn, setSoundOn] = React.useState(true);
   const [readIds, setReadIds] = React.useState<Set<string>>(new Set());
 
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const initialLoadDone = React.useRef(false);
   const knownIdsRef = React.useRef<Set<string>>(new Set());
 
-  // Initialize sound state & read notifications from localStorage
   React.useEffect(() => {
     setSoundOn(chimeEngine.isEnabled());
     try {
@@ -58,7 +65,6 @@ export function NotificationCenter() {
     }
   }, []);
 
-  // Poll for notifications
   const fetchNotifications = React.useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
@@ -69,13 +75,11 @@ export function NotificationCenter() {
       setNotifications(items);
 
       if (!initialLoadDone.current) {
-        // First load: seed known IDs without playing alert spam
         items.forEach((item) => knownIdsRef.current.add(item.id));
         initialLoadDone.current = true;
         return;
       }
 
-      // Check for incoming new items
       const newItems = items.filter((item) => !knownIdsRef.current.has(item.id));
       if (newItems.length > 0) {
         newItems.forEach((item) => knownIdsRef.current.add(item.id));
@@ -83,17 +87,22 @@ export function NotificationCenter() {
         const newest = newItems[0];
         if (newest.type === "NEW_ORDER") {
           chimeEngine.playOrderBell();
-          toast.success(`🔔 New Order from ${newest.tableNumber ? `Table ${newest.tableNumber}` : "Guest"}!`, {
-            description: newest.message,
-            action: {
-              label: "View in Orders",
-              onClick: () => router.push("/dashboard/orders"),
-            },
-            duration: 8000,
-          });
+          toast.success(
+            `New Order from ${newest.tableNumber ? `Table ${newest.tableNumber}` : "Guest"}`,
+            {
+              id: newest.id,
+              description: newest.message,
+              action: {
+                label: "View in Orders",
+                onClick: () => router.push("/dashboard/orders"),
+              },
+              duration: 8000,
+            }
+          );
         } else if (newest.type === "PAYMENT_RECEIVED") {
           chimeEngine.playPaymentChime();
-          toast.success(`💳 Payment Confirmed: ₹${newest.amount}`, {
+          toast.success(`Payment Confirmed: ₹${newest.amount}`, {
+            id: newest.id,
             description: newest.message,
             action: {
               label: "View in Orders",
@@ -103,13 +112,15 @@ export function NotificationCenter() {
           });
         } else if (newest.type === "TABLE_SCAN") {
           chimeEngine.playStatusPing();
-          toast.info(`📱 Table ${newest.tableNumber} QR Scanned`, {
+          toast.info(`Table ${newest.tableNumber} QR Scanned`, {
+            id: newest.id,
             description: "Guest browsing digital menu live",
             duration: 4000,
           });
         } else if (newest.type === "ORDER_STATUS") {
           chimeEngine.playStatusPing();
           toast.info(`Order #${newest.orderNumber} ${newest.status}`, {
+            id: newest.id,
             description: newest.message,
             duration: 4000,
           });
@@ -126,6 +137,72 @@ export function NotificationCenter() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  const toggleSound = React.useCallback(() => {
+    setSoundOn((prev) => {
+      const next = !prev;
+      chimeEngine.setEnabled(next);
+      toast.info(next ? "Audio alerts enabled" : "Audio alerts muted", {
+        id: "audio-toggle",
+      });
+      return next;
+    });
+  }, []);
+
+  const markAllRead = React.useCallback(() => {
+    const allIds = new Set(notifications.map((n) => n.id));
+    setReadIds(allIds);
+    try {
+      localStorage.setItem("menuqr_read_notifications", JSON.stringify(Array.from(allIds)));
+    } catch {
+      // ignore
+    }
+    toast.success("All notifications marked as read", { id: "mark-all-read" });
+  }, [notifications]);
+
+  const markSingleRead = React.useCallback((id: string) => {
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem("menuqr_read_notifications", JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
+  const value = React.useMemo(
+    () => ({
+      notifications,
+      readIds,
+      soundOn,
+      toggleSound,
+      markAllRead,
+      markSingleRead,
+    }),
+    [notifications, readIds, soundOn, toggleSound, markAllRead, markSingleRead]
+  );
+
+  return (
+    <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
+  );
+}
+
+export function NotificationCenter() {
+  const router = useRouter();
+  const ctx = React.useContext(NotificationContext);
+  const [open, setOpen] = React.useState(false);
+  const [filter, setFilter] = React.useState<"ALL" | "ORDERS" | "PAYMENTS" | "SCANS">("ALL");
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const notifications = ctx?.notifications ?? [];
+  const readIds = ctx?.readIds ?? new Set<string>();
+  const soundOn = ctx?.soundOn ?? true;
+  const toggleSound = ctx?.toggleSound ?? (() => {});
+  const markAllRead = ctx?.markAllRead ?? (() => {});
+  const markSingleRead = ctx?.markSingleRead ?? (() => {});
+
   // Handle click outside to close dropdown
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -141,41 +218,11 @@ export function NotificationCenter() {
     };
   }, [open]);
 
-  function toggleSound() {
-    const next = !soundOn;
-    chimeEngine.setEnabled(next);
-    setSoundOn(next);
-    toast.info(next ? "🔊 Audio alerts enabled" : "🔇 Audio alerts muted");
-  }
-
   function handleTestSound() {
     chimeEngine.playOrderBell();
-    toast.success("🛎️ Desk Bell Chime Test", {
+    toast.success("Desk Bell Chime Test", {
+      id: "desk-bell-test",
       description: "Audio is working and unlocked in your browser",
-    });
-  }
-
-  function markAllRead() {
-    const allIds = new Set(notifications.map((n) => n.id));
-    setReadIds(allIds);
-    try {
-      localStorage.setItem("menuqr_read_notifications", JSON.stringify(Array.from(allIds)));
-    } catch {
-      // ignore
-    }
-    toast.success("All notifications marked as read");
-  }
-
-  function markSingleRead(id: string) {
-    setReadIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      try {
-        localStorage.setItem("menuqr_read_notifications", JSON.stringify(Array.from(next)));
-      } catch {
-        // ignore
-      }
-      return next;
     });
   }
 

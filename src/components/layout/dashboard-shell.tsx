@@ -26,7 +26,10 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { NotificationCenter } from "@/components/notifications/notification-center";
+import {
+  NotificationCenter,
+  NotificationProvider,
+} from "@/components/notifications/notification-center";
 
 const ICONS = {
   LayoutDashboard,
@@ -204,7 +207,8 @@ export function DashboardShell({
   );
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] lg:flex">
+    <NotificationProvider>
+      <div className="min-h-screen bg-[#FAF8F5] lg:flex">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col border-r border-stone-200/90 bg-white">
         {sidebarContent}
@@ -351,5 +355,6 @@ export function DashboardShell({
         </nav>
       </div>
     </div>
+    </NotificationProvider>
   );
 }

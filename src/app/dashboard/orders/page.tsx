@@ -58,7 +58,9 @@ export default function DashboardOrdersPage() {
   const [soundEnabled, setSoundEnabled] = React.useState(true);
   const [updatingId, setUpdatingId] = React.useState<string | null>(null);
 
-  const prevPendingCountRef = React.useRef<number>(0);
+  React.useEffect(() => {
+    setSoundEnabled(chimeEngine.isEnabled());
+  }, []);
 
   const fetchOrders = React.useCallback(async (showIndicator = false) => {
     if (showIndicator) setRefreshing(true);
@@ -68,22 +70,15 @@ export default function DashboardOrdersPage() {
       const data = await res.json();
       const list: Order[] = data.orders || [];
       setOrders(list);
-
-      const pendingCount = list.filter((o) => o.status === "PENDING").length;
-      if (pendingCount > prevPendingCountRef.current && prevPendingCountRef.current > 0) {
-        toast.info(`🔔 New order received! Total pending: ${pendingCount}`);
-        if (soundEnabled) {
-          chimeEngine.playOrderBell();
-        }
-      }
-      prevPendingCountRef.current = pendingCount;
+      // Audio chimes and toast alerts are handled centrally by NotificationProvider
+      // to prevent duplicate notifications across desktop, mobile, and orders views.
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [soundEnabled]);
+  }, []);
 
   React.useEffect(() => {
     fetchOrders();
@@ -173,7 +168,14 @@ export default function DashboardOrdersPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => {
+              const next = !soundEnabled;
+              chimeEngine.setEnabled(next);
+              setSoundEnabled(next);
+              toast.info(next ? "Audio alerts enabled" : "Audio alerts muted", {
+                id: "audio-toggle",
+              });
+            }}
             className="gap-2"
           >
             {soundEnabled ? (
