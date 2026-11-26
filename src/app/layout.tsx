@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   description:
     "Create, customize, and publish mobile-first QR digital menus with table-level ordering, instant UPI payments, and real-time kitchen alerts.",
   icons: {
-    icon: "/assets/favicon.png",
-    shortcut: "/assets/favicon.png",
-    apple: "/assets/favicon.png",
+    icon: "/assets/favicon.png?v=2",
+    shortcut: "/assets/favicon.png?v=2",
+    apple: "/assets/favicon.png?v=2",
   },
   openGraph: {
     title: "Tablory — Every Table Has a Story. Serve It Faster.",
