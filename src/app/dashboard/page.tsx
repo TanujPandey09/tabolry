@@ -17,7 +17,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Sparkles,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

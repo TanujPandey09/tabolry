@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, ExternalLink, Loader2, Save, Smartphone } from "lucide-react";
+import { Check, ExternalLink, Loader2, Save, Smartphone } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

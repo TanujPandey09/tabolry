@@ -29,7 +29,7 @@ import {
   Receipt,
   Loader2,
   User,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { toast } from "sonner";
 import { chimeEngine } from "@/lib/audio-chime";
 import { formatCurrency, formatWhatsAppPhone, cn } from "@/lib/utils";

@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Sparkles,
   ShoppingBag,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { toast } from "sonner";
 import { chimeEngine } from "@/lib/audio-chime";
 import { cn } from "@/lib/utils";

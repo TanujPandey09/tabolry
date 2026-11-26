@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2 } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";

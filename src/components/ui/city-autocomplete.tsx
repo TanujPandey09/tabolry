@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { LocationSuggestion } from "@/app/api/locations/search/route";

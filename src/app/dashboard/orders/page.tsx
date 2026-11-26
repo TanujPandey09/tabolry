@@ -16,7 +16,7 @@ import {
   Filter,
   Volume2,
   VolumeX,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { toast } from "sonner";
 import { formatCurrency, formatWhatsAppPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

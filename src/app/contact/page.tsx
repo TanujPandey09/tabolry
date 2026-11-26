@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Clock, Globe, Mail, Building2 } from "lucide-react";
+import { ArrowLeft, Clock, Globe, Mail, Building2 } from "@/components/ui/icons";
 import { TabloryLogo } from "@/components/ui/tablory-logo";
 
 export const metadata: Metadata = {

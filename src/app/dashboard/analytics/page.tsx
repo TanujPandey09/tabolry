@@ -10,7 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { BarChart3, ScanLine, Calendar, TrendingUp, QrCode } from "lucide-react";
+import { BarChart3, ScanLine, Calendar, TrendingUp, QrCode } from "@/components/ui/icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {

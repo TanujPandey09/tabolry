@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pencil, Loader2 } from "lucide-react";
+import { Pencil, Loader2 } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

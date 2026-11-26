@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "@/components/ui/icons";
 import { toast } from "sonner";
 
 interface MultiImageUploadProps {

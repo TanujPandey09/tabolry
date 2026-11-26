@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { QrCode } from "lucide-react";
+import { QrCode } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 
 export default function MenuNotFound() {
