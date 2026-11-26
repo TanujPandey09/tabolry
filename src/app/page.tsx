@@ -143,39 +143,57 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
-        {/* Warm Terracotta Ambient Glow */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[550px] w-[850px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/10 via-amber-500/10 to-transparent blur-3xl transform-gpu" />
+      <section className="relative overflow-hidden pt-14 pb-20 md:pt-24 md:pb-32">
+        {/* 21st.dev / ReactBits Architectural Dot Grid + Warm Terracotta Spotlight */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(#d6d3d1_1px,transparent_1px)] [background-size:24px_24px] opacity-60 [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_55%,transparent_100%)]"
+        />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/15 via-amber-500/10 to-transparent blur-3xl transform-gpu" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="grid gap-14 lg:grid-cols-12 lg:items-center">
             {/* Left Column */}
             <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-orange-50 px-3.5 py-1 text-xs font-bold text-orange-950 shadow-2xs">
+              <a
+                href="#how-it-works"
+                className="group inline-flex items-center gap-2 rounded-full border border-orange-200/90 bg-white/90 px-3.5 py-1.5 text-xs font-bold text-orange-950 shadow-xs backdrop-blur-sm transition hover:border-orange-300 hover:bg-white"
+              >
+                <span className="flex h-2 w-2 rounded-full bg-[#E15A2B]" />
                 <Sparkles className="h-3.5 w-3.5 text-brand" />
                 <span>QR Menus &bull; Table Ordering &bull; Live Kitchen Alerts</span>
-              </div>
+                <ChevronRight className="h-3.5 w-3.5 text-stone-400 transition-transform group-hover:translate-x-0.5" />
+              </a>
 
-              <h1 className="text-4xl font-black tracking-tight text-stone-950 sm:text-5xl lg:text-6xl lg:leading-[1.1]">
+              <h1 className="text-4xl font-black tracking-[-0.03em] text-stone-950 sm:text-5xl lg:text-[3.5rem] lg:leading-[1.06]">
                 Every Table Has a Story.{" "}
                 <span className="bg-gradient-to-r from-[#E15A2B] via-[#D97706] to-amber-600 bg-clip-text text-transparent">
                   Serve It Faster.
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg leading-relaxed text-stone-600 max-w-2xl mx-auto lg:mx-0">
+              <p className="text-base sm:text-lg leading-relaxed text-stone-600 max-w-xl mx-auto lg:mx-0">
                 Turn every table QR scan into instant kitchen orders. Guests browse rich dish photos, order right from their seat, and pay via UPI or Cash—with zero app downloads and zero menu reprints.
               </p>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
-                <Button size="lg" asChild className="w-full sm:w-auto bg-[#E15A2B] hover:bg-[#C94A1E] text-white shadow-md shadow-orange-600/25 font-bold h-12 px-6">
+                <Button
+                  size="lg"
+                  asChild
+                  className="group relative w-full sm:w-auto overflow-hidden bg-[#E15A2B] hover:bg-[#C94A1E] text-white shadow-lg shadow-orange-600/25 font-bold h-12 px-6 transition-all active:scale-[0.98]"
+                >
                   <Link href="/register" className="flex items-center gap-2">
-                    Create Your Digital Menu Free
-                    <ArrowRight className="h-4 w-4" />
+                    <span>Create Your Digital Menu Free</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="w-full sm:w-auto font-semibold h-12 px-5 border-stone-300 bg-white hover:bg-stone-50">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="w-full sm:w-auto font-semibold h-12 px-5 border-stone-300 bg-white/90 hover:bg-white shadow-xs transition-all active:scale-[0.98]"
+                >
                   <Link href="/menu/spice-garden-demo" target="_blank" className="flex items-center gap-2">
                     <Smartphone className="h-4 w-4 text-[#E15A2B]" />
                     Preview Live Guest Menu
@@ -201,8 +219,25 @@ export default function HomePage() {
             </div>
 
             {/* Right Column: Interactive Table Simulator */}
-            <div className="lg:col-span-6" id="demo">
-              <div className="relative mx-auto max-w-md rounded-3xl border border-stone-200/90 bg-white p-5 shadow-2xl shadow-stone-300/40">
+            <div className="lg:col-span-6 relative" id="demo">
+              {/* Floating KDS Micro-Badge (21st.dev signature depth) */}
+              <div className="hidden xl:flex animate-float-gentle absolute -left-8 top-10 z-10 items-center gap-2.5 rounded-2xl border border-stone-200/90 bg-white/95 px-3.5 py-2.5 shadow-lg shadow-stone-300/30 backdrop-blur-md">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <p className="text-[11px] font-bold text-stone-900 leading-tight">Live Kitchen Chime</p>
+                  <p className="text-[10px] text-stone-500">Orders hit KDS in &lt;1s</p>
+                </div>
+              </div>
+
+              {/* Floating UPI Micro-Badge */}
+              <div className="hidden xl:flex absolute -right-4 -bottom-5 z-10 items-center gap-2 rounded-2xl border border-stone-200/90 bg-stone-950 px-3.5 py-2.5 text-white shadow-xl shadow-stone-900/20">
+                <IndianRupee className="h-4 w-4 text-amber-400" />
+                <span className="text-[11px] font-bold">0% Commission Direct UPI</span>
+              </div>
+
+              <div className="relative mx-auto max-w-md rounded-3xl border border-stone-200/90 bg-white p-5 shadow-2xl shadow-stone-400/25 ring-1 ring-stone-950/5">
                 {/* Table Header */}
                 <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                   <div className="flex items-center gap-2">
@@ -384,6 +419,61 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 md:py-28 border-b border-stone-200/70">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto text-center space-y-3">
+            <Badge className="bg-orange-100 text-orange-950 hover:bg-orange-100 font-bold px-3 py-1">
+              5-Minute Setup
+            </Badge>
+            <h2 className="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">
+              From Printed Menus to Live Table Orders in 3 Steps
+            </h2>
+            <p className="text-base text-stone-600">
+              No POS hardware, no app downloads, and no developer needed. Launch before tonight&rsquo;s dinner service.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            {[
+              {
+                step: "01",
+                icon: Utensils,
+                title: "Build Your Digital Menu",
+                desc: "Add your categories, dish photos, Veg/Non-Veg tags, and prices. Update stock or festival specials anytime in 2 seconds.",
+              },
+              {
+                step: "02",
+                icon: Printer,
+                title: "Print Table QR Tents",
+                desc: "Auto-generate unique QR codes for every table and download print-ready A5 table tent PDFs or high-res PNGs.",
+              },
+              {
+                step: "03",
+                icon: ShieldCheck,
+                title: "Receive Orders & UPI Payments",
+                desc: "Guests scan, order from their seat, and pay via your direct UPI QR or Cash while your kitchen tracks every dish live.",
+              },
+            ].map((item, idx) => (
+              <Reveal key={item.step} delay={idx * 90}>
+                <div className="relative h-full rounded-3xl border border-stone-200/90 bg-white p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#E15A2B]">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <span className="text-3xl font-black tracking-tighter text-stone-200">
+                      {item.step}
+                    </span>
+                  </div>
+                  <h3 className="mt-6 text-lg font-bold text-stone-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Feature Grid */}
       <section id="features" className="py-20 md:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -556,6 +646,51 @@ export default function HomePage() {
             </div>
             </Reveal>
           </div>
+        </div>
+      </section>
+
+      {/* Final High-Contrast CTA Banner */}
+      <section className="py-16 md:py-24 bg-[#FAF8F5]">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl bg-stone-950 px-6 py-14 text-center text-white shadow-2xl sm:px-12 md:py-16">
+              <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[520px] -translate-x-1/2 rounded-full bg-[#E15A2B]/25 blur-3xl transform-gpu" />
+              <div className="relative mx-auto max-w-2xl space-y-5">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1 text-xs font-semibold text-amber-300">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  14-Day Free Trial &bull; Zero Commission
+                </span>
+                <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  Ready to Serve Every Table Faster?
+                </h2>
+                <p className="text-sm sm:text-base text-stone-300">
+                  Create your restaurant&rsquo;s QR digital menu, print table tents, and start taking live kitchen orders in under 5 minutes.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="w-full sm:w-auto bg-[#E15A2B] hover:bg-[#C94A1E] text-white font-bold h-12 px-7 shadow-lg shadow-orange-600/30"
+                  >
+                    <Link href="/register" className="flex items-center gap-2">
+                      Start Your 14-Day Free Trial
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    asChild
+                    className="w-full sm:w-auto border-stone-700 bg-stone-900 text-white hover:bg-stone-800 hover:text-white h-12 px-6 font-semibold"
+                  >
+                    <Link href="/menu/spice-garden-demo" target="_blank">
+                      Explore Live Guest Menu
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
