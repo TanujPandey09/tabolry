@@ -278,7 +278,10 @@ export default function AppearancePage() {
                 <div className="absolute top-2.5 left-1/2 -translate-x-1/2 h-4 w-24 bg-slate-900 rounded-full z-50 pointer-events-none flex items-center justify-end pr-2">
                   <span className="h-2 w-2 rounded-full bg-slate-800" />
                 </div>
-                <div className="max-h-[660px] overflow-y-auto scrollbar-none">
+                <div
+                  data-lenis-prevent
+                  className="max-h-[660px] overflow-y-auto scrollbar-none overscroll-contain"
+                >
                   <PublicMenuView
                     restaurant={{
                       ...restaurant,

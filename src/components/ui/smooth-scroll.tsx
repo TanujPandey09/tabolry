@@ -17,7 +17,21 @@ export function SmoothScroll() {
       touchMultiplier: 1.4,
       prevent: (node) => {
         if (!(node instanceof Element)) return false;
-        return Boolean(node.closest('[role="dialog"], [data-lenis-prevent]'));
+        if (node.closest('[role="dialog"], [data-lenis-prevent]')) return true;
+
+        let current: Element | null = node;
+        while (current && current !== document.body && current !== document.documentElement) {
+          const style = window.getComputedStyle(current);
+          const overflowY = style.overflowY;
+          if (
+            (overflowY === "auto" || overflowY === "scroll") &&
+            current.scrollHeight > current.clientHeight + 1
+          ) {
+            return true;
+          }
+          current = current.parentElement;
+        }
+        return false;
       },
     });
 
