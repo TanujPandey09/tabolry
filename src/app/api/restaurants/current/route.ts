@@ -10,6 +10,7 @@ import {
 } from "@/lib/tenant";
 import { updateRestaurantSchema } from "@/lib/validators";
 import { slugify } from "@/lib/utils";
+import { isLemonSqueezyConfigured, isRazorpayConfigured } from "@/lib/billing";
 import { z } from "zod";
 
 export async function GET() {
@@ -45,6 +46,10 @@ export async function GET() {
         activeOrdersCount,
       },
       plans,
+      billingGateways: {
+        razorpayEnabled: isRazorpayConfigured(),
+        lemonSqueezyEnabled: isLemonSqueezyConfigured(),
+      },
     });
   } catch (error) {
     return handleApiError(error);

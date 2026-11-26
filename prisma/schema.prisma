@@ -129,8 +129,9 @@ model Restaurant {
   tables       RestaurantTable[]
   qrCodes      QRCode[]
   scanEvents   QRScanEvent[]
-  subscription Subscription?
-  orders       Order[]
+  subscription         Subscription?
+  subscriptionPayments SubscriptionPayment[]
+  orders               Order[]
 
   @@index([status, isPublished])
   @@index([createdAt])
@@ -267,29 +268,55 @@ model SubscriptionPlan {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  subscriptions Subscription[]
+  subscriptions        Subscription[]
+  subscriptionPayments SubscriptionPayment[]
 
   @@index([isActive, sortOrder])
 }
 
 model Subscription {
-  id                 String             @id @default(cuid())
-  restaurantId       String             @unique
-  planId             String
-  billingCycle       BillingCycle       @default(TRIAL)
-  status             SubscriptionStatus @default(TRIALING)
-  trialEndsAt        DateTime?
-  currentPeriodStart DateTime           @default(now())
-  currentPeriodEnd   DateTime?
-  notes              String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                     String             @id @default(cuid())
+  restaurantId           String             @unique
+  planId                 String
+  billingCycle           BillingCycle       @default(TRIAL)
+  status                 SubscriptionStatus @default(TRIALING)
+  trialEndsAt            DateTime?
+  currentPeriodStart     DateTime           @default(now())
+  currentPeriodEnd       DateTime?
+  paymentProvider        String?
+  externalCustomerId     String?
+  externalSubscriptionId String?
+  externalOrderId        String?
+  lastPaymentId          String?
+  notes                  String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   plan       SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@index([status, trialEndsAt])
   @@index([planId])
+}
+
+model SubscriptionPayment {
+  id                String       @id @default(cuid())
+  restaurantId      String
+  planId            String
+  provider          String
+  billingCycle      BillingCycle
+  amount            Decimal      @db.Decimal(10, 2)
+  currency          String       @default("INR")
+  externalOrderId   String?
+  externalPaymentId String       @unique
+  status            String       @default("PAID")
+  rawPayload        Json?
+  createdAt         DateTime     @default(now())
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  plan       SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([restaurantId, createdAt])
 }
 
 model Order {
