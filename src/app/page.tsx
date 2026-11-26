@@ -149,7 +149,7 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(#d6d3d1_1px,transparent_1px)] [background-size:24px_24px] opacity-60 [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_55%,transparent_100%)]"
         />
-        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/15 via-amber-500/10 to-transparent blur-3xl transform-gpu" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[520px] w-[860px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/[0.05] via-amber-500/[0.04] to-transparent blur-2xl transform-gpu" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-14 lg:grid-cols-12 lg:items-center">
@@ -671,24 +671,32 @@ export default function HomePage() {
       <section className="py-12 md:py-14 bg-[#FAF8F5]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <Reveal>
-            <div className="relative overflow-hidden rounded-3xl bg-stone-950 px-6 py-14 text-center text-white shadow-2xl sm:px-12 md:py-16">
-              <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[520px] -translate-x-1/2 rounded-full bg-[#E15A2B]/25 blur-3xl transform-gpu" />
-              <div className="relative mx-auto max-w-2xl space-y-5">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1 text-xs font-semibold text-amber-300">
-                  <Sparkles className="h-3.5 w-3.5" />
+            <div className="relative overflow-hidden rounded-3xl border border-stone-800 bg-stone-950 px-6 py-12 text-center text-white shadow-xl sm:px-12 md:py-14">
+              {/* Crisp pixel/architectural grid — zero blur/glow */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#ffffff0b_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0b_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_75%_75%_at_50%_50%,#000_45%,transparent_100%)]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-stone-700 to-transparent"
+              />
+              <div className="relative mx-auto max-w-2xl space-y-4">
+                <span className="inline-flex items-center gap-2 rounded-full border border-stone-800 bg-stone-900 px-3.5 py-1 text-xs font-semibold text-stone-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#E15A2B]" />
                   14-Day Free Trial &bull; Zero Commission
                 </span>
                 <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
                   Ready to Serve Every Table Faster?
                 </h2>
-                <p className="text-sm sm:text-base text-stone-300">
+                <p className="text-sm sm:text-base text-stone-400">
                   Create your restaurant&rsquo;s QR digital menu, print table tents, and start taking live kitchen orders in under 5 minutes.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
                   <Button
                     size="lg"
                     asChild
-                    className="w-full sm:w-auto bg-[#E15A2B] hover:bg-[#C94A1E] text-white font-bold h-12 px-7 shadow-lg shadow-orange-600/30"
+                    className="w-full sm:w-auto bg-[#E15A2B] hover:bg-[#C94A1E] text-white font-bold h-12 px-7 transition-colors"
                   >
                     <Link href="/register" className="flex items-center gap-2">
                       Start Your 14-Day Free Trial
