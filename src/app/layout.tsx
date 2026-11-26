@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import "./globals.css";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.tablory.online";
@@ -51,6 +52,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-[#FAF8F5] text-[#18181B] antialiased">
+        <SmoothScroll />
         {children}
         <Toaster position="top-right" richColors closeButton />
       </body>

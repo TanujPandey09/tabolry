@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TabloryLogo } from "@/components/ui/tablory-logo";
+import { Reveal } from "@/components/ui/motion";
 import { formatCurrency } from "@/lib/utils";
 
 const DEMO_ITEMS = [
@@ -101,7 +102,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Navigation */}
-      <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md transform-gpu">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center">
             <TabloryLogo />
@@ -144,7 +145,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
         {/* Warm Terracotta Ambient Glow */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[550px] w-[850px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/10 via-amber-500/10 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[550px] w-[850px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-orange-500/10 via-amber-500/10 to-transparent blur-3xl transform-gpu" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
@@ -366,22 +367,19 @@ export default function HomePage() {
             Tested &amp; Trusted by restaurants, dhabas &amp; bistros across Western UP &amp; Delhi-NCR
           </p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 text-center">
-            <div className="rounded-xl bg-[#FAF8F5] p-4 border border-stone-100">
-              <span className="text-2xl font-black text-stone-900">100%</span>
-              <p className="text-xs text-stone-500 font-medium mt-0.5">App-Free Browser Menu</p>
-            </div>
-            <div className="rounded-xl bg-[#FAF8F5] p-4 border border-stone-100">
-              <span className="text-2xl font-black text-stone-900">₹0</span>
-              <p className="text-xs text-stone-500 font-medium mt-0.5">Hardware Investment</p>
-            </div>
-            <div className="rounded-xl bg-[#FAF8F5] p-4 border border-stone-100">
-              <span className="text-2xl font-black text-stone-900">&lt; 3s</span>
-              <p className="text-xs text-stone-500 font-medium mt-0.5">Lightning Fast Loading</p>
-            </div>
-            <div className="rounded-xl bg-[#FAF8F5] p-4 border border-stone-100">
-              <span className="text-2xl font-black text-stone-900">14 Days</span>
-              <p className="text-xs text-stone-500 font-medium mt-0.5">Full Free Pilot Access</p>
-            </div>
+            {[
+              { stat: "100%", label: "App-Free Browser Menu" },
+              { stat: "₹0", label: "Hardware Investment" },
+              { stat: "< 3s", label: "Lightning Fast Loading" },
+              { stat: "14 Days", label: "Full Free Pilot Access" },
+            ].map((item, idx) => (
+              <Reveal key={item.label} delay={idx * 70}>
+                <div className="rounded-xl bg-[#FAF8F5] p-4 border border-stone-100 transition-transform duration-300 hover:-translate-y-0.5">
+                  <span className="text-2xl font-black text-stone-900">{item.stat}</span>
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">{item.label}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
@@ -433,17 +431,16 @@ export default function HomePage() {
                 title: "100% Real Scan Analytics",
                 desc: "Track real guest visits, table-wise scan counts, and daily peak dining hours with zero fake statistics.",
               },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl border border-stone-200/90 bg-white p-7 shadow-xs hover:border-stone-300 hover:shadow-md transition space-y-4"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-[#E15A2B]">
-                  <f.icon className="h-6 w-6" />
+            ].map((f, idx) => (
+              <Reveal key={f.title} delay={idx * 70}>
+                <div className="group h-full rounded-2xl border border-stone-200/90 bg-white p-7 shadow-xs hover:border-stone-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 space-y-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-[#E15A2B] transition-transform duration-300 group-hover:scale-105">
+                    <f.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-900">{f.title}</h3>
+                  <p className="text-sm leading-relaxed text-stone-600">{f.desc}</p>
                 </div>
-                <h3 className="text-lg font-bold text-stone-900">{f.title}</h3>
-                <p className="text-sm leading-relaxed text-stone-600">{f.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -466,7 +463,8 @@ export default function HomePage() {
 
           <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
             {/* Free Trial */}
-            <div className="rounded-3xl border border-stone-200 bg-[#FAF8F5] p-8 shadow-xs flex flex-col justify-between">
+            <Reveal delay={0}>
+              <div className="h-full rounded-3xl border border-stone-200 bg-[#FAF8F5] p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-400">Pilot Launch</span>
                 <h3 className="text-xl font-bold text-stone-900 mt-1">14-Day Free Trial</h3>
@@ -488,9 +486,11 @@ export default function HomePage() {
                 <Link href="/register">Start Free Trial</Link>
               </Button>
             </div>
+            </Reveal>
 
             {/* Starter Plan */}
-            <div className="rounded-3xl border border-[#E15A2B] bg-white p-8 shadow-xl shadow-orange-500/10 ring-2 ring-[#E15A2B] flex flex-col justify-between relative">
+            <Reveal delay={90}>
+              <div className="h-full rounded-3xl border border-[#E15A2B] bg-white p-8 shadow-xl shadow-orange-500/10 ring-2 ring-[#E15A2B] transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between relative">
               <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#E15A2B] px-3.5 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
                 Most Popular
               </span>
@@ -522,9 +522,11 @@ export default function HomePage() {
                 <Link href="/register">Get Started</Link>
               </Button>
             </div>
+            </Reveal>
 
             {/* Growth Plan */}
-            <div className="rounded-3xl border border-stone-200 bg-[#FAF8F5] p-8 shadow-xs flex flex-col justify-between">
+            <Reveal delay={180}>
+              <div className="h-full rounded-3xl border border-stone-200 bg-[#FAF8F5] p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-400">Family Dining</span>
                 <h3 className="text-xl font-bold text-stone-900 mt-1">Growth</h3>
@@ -552,6 +554,7 @@ export default function HomePage() {
                 <Link href="/register">Choose Growth</Link>
               </Button>
             </div>
+            </Reveal>
           </div>
         </div>
       </section>
