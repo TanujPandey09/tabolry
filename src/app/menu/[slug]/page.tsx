@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { detectDeviceType, hashIp } from "@/lib/utils";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { recordQrScan } from "@/lib/qr-scan";
+import { isSubscriptionLive } from "@/lib/trial-guard";
 import { PublicMenuView } from "@/components/menu/public-menu-view";
 
 export const dynamic = "force-dynamic";
@@ -34,10 +34,18 @@ export default async function PublicRestaurantMenuPage({
       template: true,
       status: true,
       isPublished: true,
+      subscription: {
+        select: { status: true, trialEndsAt: true, currentPeriodEnd: true },
+      },
     },
   });
 
-  if (!restaurant || restaurant.status !== "ACTIVE" || !restaurant.isPublished) {
+  if (
+    !restaurant ||
+    restaurant.status !== "ACTIVE" ||
+    !restaurant.isPublished ||
+    !isSubscriptionLive(restaurant.subscription)
+  ) {
     notFound();
   }
 
@@ -71,19 +79,13 @@ export default async function PublicRestaurantMenuPage({
         });
 
         if (generalQr) {
-          const rl = checkRateLimit(`scan:${generalQr.id}:${ip}`, 60, 60 * 1000);
-          if (rl.allowed) {
-            await prisma.qRScanEvent.create({
-              data: {
-                restaurantId: restaurant.id,
-                qrCodeId: generalQr.id,
-                tableId: null,
-                userAgent: ua ? ua.slice(0, 255) : null,
-                deviceType: detectDeviceType(ua),
-                ipHash: hashIp(ip),
-              },
-            });
-          }
+          await recordQrScan({
+            restaurantId: restaurant.id,
+            qrCodeId: generalQr.id,
+            tableId: null,
+            userAgent: ua,
+            ip,
+          });
         }
       } catch {
         // Non-blocking scan event telemetry

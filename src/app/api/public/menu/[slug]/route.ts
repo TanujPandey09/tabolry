@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, ApiError } from "@/lib/tenant";
-import { detectDeviceType, hashIp } from "@/lib/utils";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/rate-limit";
+import { recordQrScan } from "@/lib/qr-scan";
+import { isSubscriptionLive } from "@/lib/trial-guard";
 
 export async function GET(
   request: Request,
@@ -32,11 +33,19 @@ export async function GET(
         template: true,
         status: true,
         isPublished: true,
+        subscription: {
+          select: { status: true, trialEndsAt: true, currentPeriodEnd: true },
+        },
       },
     });
 
-    // Strictly block suspended, inactive, or unpublished restaurants from exposing menu data
-    if (!restaurant || restaurant.status !== "ACTIVE" || !restaurant.isPublished) {
+    // Strictly block suspended, inactive, unpublished, or expired-subscription restaurants
+    if (
+      !restaurant ||
+      restaurant.status !== "ACTIVE" ||
+      !restaurant.isPublished ||
+      !isSubscriptionLive(restaurant.subscription)
+    ) {
       throw new ApiError(404, "This restaurant menu is not currently available.", "MENU_UNAVAILABLE");
     }
 
@@ -80,23 +89,15 @@ export async function GET(
       activeQrId = generalQr?.id ?? null;
     }
 
-    // Track real QR scan event if requested (with rate limiting to prevent spam)
+    // Track real QR scan event if requested (bot-filtered & deduplicated)
     if (shouldTrack && activeQrId) {
-      const ip = getClientIp(request);
-      const rl = checkRateLimit(`scan:${activeQrId}:${ip}`, 60, 60 * 1000);
-      if (rl.allowed) {
-        const ua = request.headers.get("user-agent") || null;
-        await prisma.qRScanEvent.create({
-          data: {
-            restaurantId: restaurant.id,
-            qrCodeId: activeQrId,
-            tableId: tableInfo?.id ?? null,
-            userAgent: ua ? ua.slice(0, 255) : null,
-            deviceType: detectDeviceType(ua),
-            ipHash: hashIp(ip),
-          },
-        });
-      }
+      await recordQrScan({
+        restaurantId: restaurant.id,
+        qrCodeId: activeQrId,
+        tableId: tableInfo?.id ?? null,
+        userAgent: request.headers.get("user-agent") || null,
+        ip: getClientIp(request),
+      });
     }
 
     const categories = await prisma.category.findMany({

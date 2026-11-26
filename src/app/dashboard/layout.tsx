@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/tenant";
+import { cookies } from "next/headers";
+import { ACTIVE_RESTAURANT_COOKIE, getAuthenticatedUser } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell, type NavItem } from "@/components/layout/dashboard-shell";
 
@@ -25,7 +26,7 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const membership = await prisma.restaurantMembership.findFirst({
+  const memberships = await prisma.restaurantMembership.findMany({
     where: { userId: user.id },
     include: {
       restaurant: { select: { id: true, name: true, slug: true, isPublished: true } },
@@ -33,12 +34,19 @@ export default async function DashboardLayout({
     orderBy: { createdAt: "asc" },
   });
 
-  if (!membership) {
+  if (memberships.length === 0) {
     if (user.role === "SUPER_ADMIN") {
       redirect("/admin");
     }
     redirect("/onboarding");
   }
+
+  const cookieStore = await cookies();
+  const preferredId = cookieStore.get(ACTIVE_RESTAURANT_COOKIE)?.value;
+  const membership =
+    (preferredId
+      ? memberships.find((m) => m.restaurantId === preferredId)
+      : undefined) ?? memberships[0];
 
   return (
     <DashboardShell

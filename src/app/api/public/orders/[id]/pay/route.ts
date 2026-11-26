@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const paySchema = z.object({
   paymentMethod: z.enum(["UPI_ONLINE", "CARD", "CASH_AT_COUNTER"]).default("UPI_ONLINE"),
-  transactionRef: z.string().optional(),
+  transactionRef: z.string().trim().max(80).optional(),
 });
 
 export async function POST(
@@ -29,35 +29,62 @@ export async function POST(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    if (order.status === "CANCELLED") {
+      return NextResponse.json({ error: "Cannot pay for a cancelled order" }, { status: 400 });
+    }
+
     if (order.paymentStatus === "PAID") {
       return NextResponse.json({
-        message: "Order is already paid",
-        order: { id: order.id, paymentStatus: order.paymentStatus },
+        success: true,
+        verificationPending: false,
+        message: "Order is already verified as paid",
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          paymentMethod: order.paymentMethod,
+        },
       });
     }
+
+    // Security: Never trust an unauthenticated public client to mark an order PAID.
+    // Record the customer's payment claim + optional UTR reference so staff can verify
+    // it on their UPI soundbox / merchant app and mark PAID from /dashboard/orders.
+    const refTag = parsed.data.transactionRef
+      ? `[UPI Ref: ${parsed.data.transactionRef} — verify on UPI app]`
+      : "[Guest initiated UPI — verify on UPI soundbox]";
+
+    const existingNotes = order.notes?.trim() || "";
+    const updatedNotes = existingNotes.includes("verify on UPI")
+      ? existingNotes
+      : existingNotes
+        ? `${existingNotes} | ${refTag}`
+        : refTag;
 
     const updated = await prisma.order.update({
       where: { id },
       data: {
-        paymentStatus: "PAID",
         paymentMethod: parsed.data.paymentMethod,
-        // If pending, advance to CONFIRMED since customer paid
-        status: order.status === "PENDING" ? "CONFIRMED" : order.status,
+        notes: updatedNotes.slice(0, 500),
       },
     });
 
     return NextResponse.json({
       success: true,
+      verificationPending: true,
+      message: "UPI payment noted. Staff will verify and confirm shortly.",
       order: {
         id: updated.id,
         orderNumber: updated.orderNumber,
         status: updated.status,
         paymentStatus: updated.paymentStatus,
         paymentMethod: updated.paymentMethod,
+        notes: updated.notes,
       },
     });
   } catch (error) {
-    console.error("Failed to process payment:", error);
-    return NextResponse.json({ error: "Payment processing failed" }, { status: 500 });
+    console.error("Failed to record payment intent:", error);
+    return NextResponse.json({ error: "Could not update payment status" }, { status: 500 });
   }
 }

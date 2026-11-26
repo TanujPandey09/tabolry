@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createOrderSchema } from "@/lib/validations/order";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitDistributed } from "@/lib/rate-limit";
+import { isSubscriptionLive } from "@/lib/trial-guard";
 import { headers } from "next/headers";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -15,10 +16,11 @@ export async function POST(req: Request) {
       reqHeaders.get("x-real-ip") ||
       "127.0.0.1";
 
-    const rl = checkRateLimit(`public:orders:${ip}`, 30, 60 * 1000);
+    // Prank-order protection: max 5 orders per 15 minutes per IP
+    const rl = await checkRateLimitDistributed(`public:orders:${ip}`, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Too many orders placed from this network. Please wait a moment." },
+        { error: "Too many orders placed from this device. Please wait a few minutes or ask your server." },
         { status: 429 }
       );
     }
@@ -42,13 +44,28 @@ export async function POST(req: Request) {
       items,
     } = parsed.data;
 
-    // Verify restaurant is active and published
+    // Verify restaurant is active, published, and has a live subscription
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug: restaurantSlug },
-      select: { id: true, name: true, slug: true, status: true, isPublished: true, currency: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        isPublished: true,
+        currency: true,
+        subscription: {
+          select: { status: true, trialEndsAt: true, currentPeriodEnd: true },
+        },
+      },
     });
 
-    if (!restaurant || restaurant.status !== "ACTIVE" || !restaurant.isPublished) {
+    if (
+      !restaurant ||
+      restaurant.status !== "ACTIVE" ||
+      !restaurant.isPublished ||
+      !isSubscriptionLive(restaurant.subscription)
+    ) {
       return NextResponse.json(
         { error: "This restaurant is not currently accepting orders" },
         { status: 404 }
@@ -137,9 +154,16 @@ export async function POST(req: Request) {
     const taxAmount = new Decimal("0.00");
     const totalAmount = subtotal;
 
-    // Generate unique order number (e.g., ORD-7392)
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `ORD-${randomSuffix}`;
+    // Generate collision-free daily sequential order number per restaurant (e.g. ORD-101, ORD-102)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todaysOrderCount = await prisma.order.count({
+      where: {
+        restaurantId: restaurant.id,
+        createdAt: { gte: startOfToday },
+      },
+    });
+    const orderNumber = `ORD-${101 + todaysOrderCount}`;
 
     const order = await prisma.order.create({
       data: {

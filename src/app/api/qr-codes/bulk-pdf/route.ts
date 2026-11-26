@@ -7,6 +7,19 @@ import { buildMenuUrl, generatePrintableQrPdf, type PrintableQrItem } from "@/li
 export async function GET(request: Request) {
   try {
     const ctx = await requireRestaurantContext();
+    const planCode = ctx.restaurant.subscription?.plan?.code?.toUpperCase();
+    const isPaidGrowth =
+      ctx.user.role === "SUPER_ADMIN" ||
+      (planCode === "GROWTH" && ctx.restaurant.subscription?.status === "ACTIVE");
+
+    if (!isPaidGrowth) {
+      throw new ApiError(
+        403,
+        "Bulk printable PDF export is available on the Growth plan. Download individual table PDFs or upgrade in Settings.",
+        "PLAN_UPGRADE_REQUIRED"
+      );
+    }
+
     const baseUrl = getAppBaseUrl(request.url);
 
     const tables = await prisma.restaurantTable.findMany({

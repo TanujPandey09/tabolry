@@ -67,8 +67,16 @@ export function detectDeviceType(userAgent: string | null | undefined): DeviceTy
 
 export function hashIp(ip: string | null | undefined): string | null {
   if (!ip) return null;
-  const salt = process.env.AUTH_SECRET || "menuqr-ip-salt";
-  return crypto.createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
+  const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const salt = process.env.AUTH_SECRET;
+  if (!salt && isProd) {
+    throw new Error("AUTH_SECRET must be set in production to hash client IPs.");
+  }
+  return crypto
+    .createHash("sha256")
+    .update(`${salt || "dev-only-ip-salt"}:${ip}`)
+    .digest("hex")
+    .slice(0, 32);
 }
 
 export function getAppBaseUrl(requestUrl?: string): string {

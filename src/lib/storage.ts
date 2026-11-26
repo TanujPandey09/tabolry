@@ -105,7 +105,20 @@ export async function uploadRestaurantImage(
       throw new ApiError(502, "Cloudinary did not return an image URL.", "UPLOAD_FAILED");
     }
 
-    return { url: data.secure_url, provider: "cloudinary" };
+    // Apply automatic format/quality/width optimization for fast Indian 4G loading
+    const optimizedUrl = data.secure_url.includes("/image/upload/")
+      ? data.secure_url.replace("/image/upload/", "/image/upload/f_auto,q_auto,w_800/")
+      : data.secure_url;
+
+    return { url: optimizedUrl, provider: "cloudinary" };
+  }
+
+  if (provider === "cloudinary") {
+    throw new ApiError(
+      500,
+      "Cloudinary storage is selected but credentials are incomplete.",
+      "STORAGE_NOT_CONFIGURED"
+    );
   }
 
   if (
@@ -137,6 +150,25 @@ export async function uploadRestaurantImage(
 
     const publicUrl = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${objectPath}`;
     return { url: publicUrl, provider: "supabase" };
+  }
+
+  if (provider === "supabase") {
+    throw new ApiError(
+      500,
+      "Supabase storage is selected but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.",
+      "STORAGE_NOT_CONFIGURED"
+    );
+  }
+
+  // Block ephemeral local disk uploads in production / Vercel serverless
+  const isProduction =
+    process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  if (isProduction) {
+    throw new ApiError(
+      500,
+      "Local image storage is disabled in production. Configure Cloudinary or Supabase Storage.",
+      "STORAGE_NOT_CONFIGURED"
+    );
   }
 
   // Local development storage fallback under /public/uploads/<restaurantId>/

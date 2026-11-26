@@ -135,8 +135,17 @@ async function main() {
   });
 
   // 2. Seed Super Admin account
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@menuqr.in";
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@12345";
+  const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@tablory.online";
+  const envAdminPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
+
+  if (isProd && (!envAdminPassword || envAdminPassword.length < 12)) {
+    throw new Error(
+      "SEED_ADMIN_PASSWORD (min 12 chars) must be explicitly set when seeding in production."
+    );
+  }
+
+  const adminPassword = envAdminPassword || "Admin@12345";
   const adminPasswordHash = await bcrypt.hash(adminPassword, 12);
 
   await prisma.user.upsert({
@@ -151,8 +160,16 @@ async function main() {
     },
   });
 
-  // 3. Seed Demo Restaurant Owner & Demo Restaurant (clearly labeled DEMO)
+  // 3. Seed Demo Restaurant Owner & Demo Restaurant (dev-only unless SEED_DEMO_DATA="true")
+  const shouldSeedDemo = process.env.SEED_DEMO_DATA === "true" || !isProd;
   const demoOwnerEmail = "demo@spicegarden.in";
+
+  if (!shouldSeedDemo) {
+    console.log("Seed complete! (Production mode — demo restaurant skipped)");
+    console.log(`  Super Admin : ${adminEmail} (password set from SEED_ADMIN_PASSWORD)`);
+    return;
+  }
+
   const demoOwnerPasswordHash = await bcrypt.hash("Demo@12345", 12);
 
   const demoOwner = await prisma.user.upsert({
@@ -404,8 +421,8 @@ async function main() {
   }
 
   console.log("Seed complete!");
-  console.log(`  Super Admin : ${adminEmail} / ${adminPassword}`);
-  console.log(`  Demo Owner  : ${demoOwnerEmail} / Demo@12345`);
+  console.log(`  Super Admin : ${adminEmail} (password configured via env/dev default)`);
+  console.log(`  Demo Owner  : ${demoOwnerEmail} (dev demo account)`);
   console.log("  Demo Menu   : /menu/spice-garden-demo");
 }
 

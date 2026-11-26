@@ -29,6 +29,11 @@ import {
   Receipt,
   Loader2,
   User,
+  Copy,
+  Check,
+  AlertTriangle,
+  ShieldCheck,
+  Smartphone,
 } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { chimeEngine } from "@/lib/audio-chime";
@@ -149,11 +154,77 @@ export function PublicMenuView({
   const [orderNotes, setOrderNotes] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState<"CASH_AT_COUNTER" | "UPI_ONLINE">("CASH_AT_COUNTER");
 
-  // Active Placed Order Tracking
-  const [activeOrder, setActiveOrder] = React.useState<ActiveOrder | null>(null);
+  // Active Placed Orders Tracking (persisted per table session so diners don't lose orders or double-order)
+  const [placedOrders, setPlacedOrders] = React.useState<ActiveOrder[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
   const [orderStatusOpen, setOrderStatusOpen] = React.useState(false);
   const [upiQrDataUrl, setUpiQrDataUrl] = React.useState<string | null>(null);
+  const [showQrOnScreen, setShowQrOnScreen] = React.useState(false);
+  const [upiRefInput, setUpiRefInput] = React.useState("");
+  const [copiedUpi, setCopiedUpi] = React.useState(false);
   const [payingNow, setPayingNow] = React.useState(false);
+
+  const sessionStorageKey = React.useMemo(
+    () => `tablory_orders:${restaurant.slug}:${table?.id || "general"}`,
+    [restaurant.slug, table?.id]
+  );
+
+  // Restore active table orders from sessionStorage on load
+  React.useEffect(() => {
+    if (isPreview || typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem(sessionStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ActiveOrder[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPlacedOrders(parsed);
+          setSelectedOrderId(parsed[0].id);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [sessionStorageKey, isPreview]);
+
+  React.useEffect(() => {
+    if (isPreview || typeof window === "undefined") return;
+    try {
+      if (placedOrders.length > 0) {
+        window.sessionStorage.setItem(sessionStorageKey, JSON.stringify(placedOrders));
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [placedOrders, sessionStorageKey, isPreview]);
+
+  const activeOrder = React.useMemo(
+    () =>
+      placedOrders.find((o) => o.id === selectedOrderId) ||
+      placedOrders[0] ||
+      null,
+    [placedOrders, selectedOrderId]
+  );
+
+  // Track already-ordered quantities across active (non-cancelled, non-completed) table rounds
+  const orderedQtyByName = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ord of placedOrders) {
+      if (ord.status === "CANCELLED" || ord.status === "COMPLETED") continue;
+      for (const it of ord.items || []) {
+        const key = it.name.trim().toLowerCase();
+        map.set(key, (map.get(key) || 0) + it.quantity);
+      }
+    }
+    return map;
+  }, [placedOrders]);
+
+  const duplicateCartItems = React.useMemo(
+    () =>
+      Object.values(cart).filter(
+        (entry) => (orderedQtyByName.get(entry.item.name.trim().toLowerCase()) || 0) > 0
+      ),
+    [cart, orderedQtyByName]
+  );
 
   const rawAccent = restaurant.primaryColor;
   const accent = !rawAccent || rawAccent.toUpperCase() === "#2563EB" ? "#E15A2B" : rawAccent;
@@ -204,6 +275,7 @@ export function PublicMenuView({
       toast.error(`${item.name} is currently sold out`);
       return;
     }
+    const alreadyOrdered = orderedQtyByName.get(item.name.trim().toLowerCase()) || 0;
     setCart((prev) => {
       const existing = prev[item.id];
       const quantity = (existing?.quantity || 0) + 1;
@@ -212,7 +284,13 @@ export function PublicMenuView({
         [item.id]: { item, quantity, notes: existing?.notes || "" },
       };
     });
-    toast.success(`Added ${item.name} to order`);
+    if (alreadyOrdered > 0) {
+      toast.warning(`Already ordered ×${alreadyOrdered} ${item.name} on this table`, {
+        description: "Added 1 more to your new round. Remove in cart if accidental.",
+      });
+    } else {
+      toast.success(`Added ${item.name} to order`);
+    }
   }
 
   function updateCartQuantity(itemId: string, delta: number) {
@@ -240,20 +318,30 @@ export function PublicMenuView({
     });
   }
 
-  // Generate UPI QR code for active order (dynamically imports qrcode only when customer initiates UPI)
+  const activeUpiUri = React.useMemo(() => {
+    if (!activeOrder || !restaurant.upiId?.trim()) return null;
+    return `upi://pay?pa=${encodeURIComponent(restaurant.upiId.trim())}&pn=${encodeURIComponent(
+      restaurant.name
+    )}&am=${activeOrder.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
+      `Order ${activeOrder.orderNumber}`
+    )}`;
+  }, [activeOrder, restaurant.name, restaurant.upiId]);
+
+  // Generate UPI QR code for active order only when needed
   React.useEffect(() => {
     let cancelled = false;
     if (activeOrder && activeOrder.paymentMethod === "UPI_ONLINE" && activeOrder.paymentStatus !== "PAID") {
-      const payeeUpi = restaurant.upiId?.trim() || "restaurant@upi";
-      const upiUri = `upi://pay?pa=${encodeURIComponent(payeeUpi)}&pn=${encodeURIComponent(
-        restaurant.name
-      )}&am=${activeOrder.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
-        `Order ${activeOrder.orderNumber}`
-      )}`;
+      const uri =
+        activeUpiUri ||
+        `upi://pay?pa=${encodeURIComponent("restaurant@upi")}&pn=${encodeURIComponent(
+          restaurant.name
+        )}&am=${activeOrder.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
+          `Order ${activeOrder.orderNumber}`
+        )}`;
       import("qrcode")
         .then(({ default: QRCode }) => {
           if (!cancelled) {
-            QRCode.toDataURL(upiUri, { width: 220, margin: 1 })
+            QRCode.toDataURL(uri, { width: 220, margin: 1 })
               .then((url) => {
                 if (!cancelled) setUpiQrDataUrl(url);
               })
@@ -265,57 +353,68 @@ export function PublicMenuView({
     return () => {
       cancelled = true;
     };
-  }, [activeOrder, restaurant.name]);
+  }, [activeOrder, activeUpiUri, restaurant.name]);
 
   // Real-time polling for active order status with audio-visual notifications
   React.useEffect(() => {
     if (!activeOrder || activeOrder.status === "COMPLETED" || activeOrder.status === "CANCELLED") {
       return;
     }
+    const polledId = activeOrder.id;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/public/orders/${activeOrder.id}`);
+        const res = await fetch(`/api/public/orders/${polledId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.order) {
-            setActiveOrder((current) => {
-              if (current && current.status !== data.order.status) {
-                const s = data.order.status;
-                const orderNum = data.order.orderNumber;
-                const tableStr = table ? `Table ${table.tableNumber}` : "your table";
+            setPlacedOrders((prevList) =>
+              prevList.map((ord) => {
+                if (ord.id !== polledId) return ord;
+                if (ord.status !== data.order.status) {
+                  const s = data.order.status;
+                  const orderNum = data.order.orderNumber;
+                  const tableStr = table ? `Table ${table.tableNumber}` : "your table";
 
-                if (s === "CONFIRMED") {
-                  chimeEngine.playStatusPing();
-                  toast.success(`✅ Kitchen Confirmed Order #${orderNum}`, {
-                    description: `Staff confirmed your dishes for ${tableStr}. Cooking will begin shortly.`,
+                  if (s === "CONFIRMED") {
+                    chimeEngine.playStatusPing();
+                    toast.success(`Kitchen Confirmed Order #${orderNum}`, {
+                      description: `Staff confirmed your dishes for ${tableStr}.`,
+                      duration: 5000,
+                    });
+                  } else if (s === "PREPARING") {
+                    chimeEngine.playStatusPing();
+                    toast.info(`Chef Started Preparing Order #${orderNum}`, {
+                      description: `Your food is now being prepared fresh in the kitchen.`,
+                      duration: 6000,
+                    });
+                  } else if (s === "SERVED") {
+                    chimeEngine.playOrderBell();
+                    toast.success(`Order #${orderNum} Served!`, {
+                      description: `Your food has arrived at ${tableStr}. Enjoy your meal!`,
+                      duration: 7000,
+                    });
+                  } else if (s === "COMPLETED") {
+                    chimeEngine.playPaymentChime();
+                    toast.success(`Order Complete`, {
+                      description: `Thank you for dining at ${restaurant.name}!`,
+                      duration: 7000,
+                    });
+                  } else if (s === "CANCELLED") {
+                    toast.error(`Order #${orderNum} Cancelled`, {
+                      description: "Please speak with the restaurant staff for assistance.",
+                    });
+                  }
+                }
+                if (ord.paymentStatus !== "PAID" && data.order.paymentStatus === "PAID") {
+                  chimeEngine.playPaymentChime();
+                  toast.success(`Payment Verified for #${data.order.orderNumber}`, {
+                    description: "Staff confirmed your payment.",
                     duration: 5000,
                   });
-                } else if (s === "PREPARING") {
-                  chimeEngine.playStatusPing();
-                  toast.info(`👨‍🍳 Chef Started Preparing Your Food!`, {
-                    description: `Order #${orderNum} is now being prepared fresh in the kitchen.`,
-                    duration: 6000,
-                  });
-                } else if (s === "SERVED") {
-                  chimeEngine.playOrderBell();
-                  toast.success(`🍽️ Order #${orderNum} Served!`, {
-                    description: `Your food has arrived at ${tableStr}. Enjoy your meal!`,
-                    duration: 7000,
-                  });
-                } else if (s === "COMPLETED") {
-                  chimeEngine.playPaymentChime();
-                  toast.success(`✨ Order Complete`, {
-                    description: `Thank you for dining at ${restaurant.name}! Have a wonderful day.`,
-                    duration: 7000,
-                  });
-                } else if (s === "CANCELLED") {
-                  toast.error(`❌ Order #${orderNum} Cancelled`, {
-                    description: "Please speak with the restaurant staff for assistance.",
-                  });
                 }
-              }
-              return data.order;
-            });
+                return data.order;
+              })
+            );
           }
         }
       } catch {
@@ -356,13 +455,17 @@ export function PublicMenuView({
 
       chimeEngine.playOrderBell();
       const tableInfo = table ? `Table ${table.tableNumber}` : "Dine-in";
-      toast.success(`🎉 Order #${data.order.orderNumber} Placed Successfully!`, {
-        description: `Sent directly to the kitchen for ${tableInfo} (${cartEntries.length} dishes • ₹${Number(data.order.totalAmount).toFixed(0)})`,
+      toast.success(`Order #${data.order.orderNumber} Placed!`, {
+        description: `Sent to the kitchen for ${tableInfo} (${cartEntries.length} dishes · ${formatCurrency(Number(data.order.totalAmount), restaurant.currency)})`,
         duration: 7000,
       });
 
-      setActiveOrder(data.order);
+      setPlacedOrders((prev) => [data.order, ...prev]);
+      setSelectedOrderId(data.order.id);
       setCart({});
+      setOrderNotes("");
+      setUpiRefInput("");
+      setShowQrOnScreen(false);
       setOrderModalOpen(false);
       setOrderStatusOpen(true);
     } catch (err: unknown) {
@@ -372,7 +475,19 @@ export function PublicMenuView({
     }
   }
 
-  async function handleSimulatePayment() {
+  async function handleCopyUpiId() {
+    if (!restaurant.upiId?.trim()) return;
+    try {
+      await navigator.clipboard.writeText(restaurant.upiId.trim());
+      setCopiedUpi(true);
+      toast.success("UPI ID copied");
+      setTimeout(() => setCopiedUpi(false), 2000);
+    } catch {
+      toast.error("Could not copy UPI ID");
+    }
+  }
+
+  async function handleNotifyUpiPaid() {
     if (!activeOrder) return;
     setPayingNow(true);
     try {
@@ -381,27 +496,31 @@ export function PublicMenuView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paymentMethod: "UPI_ONLINE",
-          transactionRef: `UPI-TXN-${Date.now()}`,
+          transactionRef: upiRefInput.trim() || undefined,
         }),
       });
-      if (!res.ok) throw new Error("Payment verification failed");
       const data = await res.json();
-      setActiveOrder((prev) =>
-        prev
-          ? {
-              ...prev,
-              paymentStatus: "PAID",
-              status: data.order?.status || "CONFIRMED",
-            }
-          : null
+      if (!res.ok) throw new Error(data.error || "Could not record payment");
+
+      setPlacedOrders((prev) =>
+        prev.map((ord) =>
+          ord.id === activeOrder.id
+            ? {
+                ...ord,
+                paymentMethod: "UPI_ONLINE",
+                paymentStatus: data.order?.paymentStatus || ord.paymentStatus,
+                notes: data.order?.notes ?? ord.notes,
+              }
+            : ord
+        )
       );
-      chimeEngine.playPaymentChime();
-      toast.success("✅ Payment Received via UPI!", {
-        description: `₹${Number(activeOrder.totalAmount).toFixed(0)} confirmed for Order #${activeOrder.orderNumber}. Digital receipt saved.`,
+      chimeEngine.playStatusPing();
+      toast.success("Payment Sent for Staff Verification", {
+        description: "Show your UPI confirmation if asked — staff will mark it Paid shortly.",
         duration: 6000,
       });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Payment failed");
+      toast.error(err instanceof Error ? err.message : "Payment update failed");
     } finally {
       setPayingNow(false);
     }
@@ -878,6 +997,7 @@ export function PublicMenuView({
                 {cat.menuItems.map((item) => {
                   const isSaved = shortlistIds.includes(item.id);
                   const inCartQty = cart[item.id]?.quantity || 0;
+                  const alreadyOrderedQty = orderedQtyByName.get(item.name.trim().toLowerCase()) || 0;
 
                   return (
                     <article
@@ -909,6 +1029,12 @@ export function PublicMenuView({
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
                             <DietaryIndicator type={item.dietaryType} />
+                            {alreadyOrderedQty > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-800 tabular-nums">
+                                <Check className="h-2.5 w-2.5" />
+                                Ordered ×{alreadyOrderedQty}
+                              </span>
+                            )}
                             {!item.isAvailable && (
                               <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
                                 Sold Out
@@ -1299,331 +1425,651 @@ export function PublicMenuView({
         </DialogContent>
       </Dialog>
 
-      {/* Complete Table Order / Checkout Dialog */}
+      {/* Complete Table Order / Checkout Bottom Sheet (Mobile-First, Pixel-Perfect) */}
       <Dialog open={orderModalOpen} onOpenChange={setOrderModalOpen}>
-        <DialogContent className="max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <ShoppingBag className="h-5 w-5 text-[#E15A2B]" />
-                Table Order
-              </DialogTitle>
-              {table && (
-                <span
-                  className="rounded-full px-3 py-1 text-xs font-bold text-white"
-                  style={{ backgroundColor: accent }}
-                >
-                  {`Table ${table.tableNumber}`}
-                </span>
-              )}
-            </div>
-            <DialogDescription>
-              Review your items and confirm your order for the kitchen.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          data-lenis-prevent
+          className="fixed inset-x-0 bottom-0 top-auto left-auto translate-x-0 translate-y-0 w-full max-w-none rounded-t-3xl rounded-b-none border-x-0 border-b-0 sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:right-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[calc(100%-2rem)] sm:max-w-lg sm:rounded-3xl sm:border p-0 gap-0 overflow-hidden flex flex-col max-h-[92dvh] bg-white"
+        >
+          {/* Mobile Grab Handle */}
+          <div className="pt-2.5 pb-1 flex justify-center sm:hidden bg-white shrink-0">
+            <span className="h-1 w-10 rounded-full bg-stone-300" />
+          </div>
+
+          {/* Sticky Header */}
+          <div className="px-5 pt-3 pb-3.5 sm:pt-5 border-b border-stone-200/80 bg-white shrink-0 pr-12">
+            <DialogHeader>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-extrabold tracking-tight text-stone-900">
+                  <ShoppingBag className="h-5 w-5 shrink-0" style={{ color: accent }} />
+                  <span>{placedOrders.length > 0 ? "Add More Dishes" : "Your Table Order"}</span>
+                </DialogTitle>
+                {table && (
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {`Table ${table.tableNumber}`}
+                  </span>
+                )}
+              </div>
+              <DialogDescription className="text-xs text-stone-500 mt-0.5">
+                Review your dishes and choose how you&apos;d like to pay.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           {cartEntries.length === 0 ? (
-            <div className="py-8 text-center text-sm text-slate-500">
+            <div className="py-12 px-5 text-center text-sm text-stone-500 bg-[#FAF8F5]/60">
               Your cart is empty. Add items from the menu to place an order.
             </div>
           ) : (
-            <div className="space-y-5 pt-2">
-              {/* Items List */}
-              <div className="space-y-3 divide-y divide-slate-100 max-h-56 overflow-y-auto pr-1">
-                {cartEntries.map(({ item, quantity }) => (
-                  <div key={item.id} className="flex items-center justify-between gap-3 pt-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <DietaryIndicator type={item.dietaryType} />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {formatCurrency(item.price, restaurant.currency)} each
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-                        <button
-                          type="button"
-                          onClick={() => updateCartQuantity(item.id, -1)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-6 text-center text-xs font-bold text-slate-900">
-                          {quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateCartQuantity(item.id, 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-
-                      <span className="w-16 text-right font-bold text-sm text-slate-900">
-                        {formatCurrency(item.price * quantity, restaurant.currency)}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-slate-400 hover:text-red-600 cursor-pointer p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Special Instructions */}
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                  Cooking Instructions (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={orderNotes}
-                  onChange={(e) => setOrderNotes(e.target.value)}
-                  placeholder="e.g. Less spicy, make extra crispy, no onions..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
-                />
-              </div>
-
-              {/* Customer Contact (Optional) */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Your Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Guest name"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">
-                    Phone (For SMS receipt)
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Method Selector */}
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">
-                  Select Payment Option
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    onClick={() => setPaymentMethod("CASH_AT_COUNTER")}
-                    className={cn(
-                      "rounded-xl border p-3 cursor-pointer transition flex flex-col justify-between",
-                      paymentMethod === "CASH_AT_COUNTER"
-                        ? "border-[#E15A2B] bg-[#E15A2B]/5 ring-2 ring-[#E15A2B]/20"
-                        : "border-slate-200 bg-white hover:bg-slate-50"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-[#E15A2B]" />
-                      <span className="text-xs font-bold text-slate-900">Pay at Counter</span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Order now, pay cash/card at the counter when leaving.
-                    </p>
-                  </div>
-
-                  <div
-                    onClick={() => setPaymentMethod("UPI_ONLINE")}
-                    className={cn(
-                      "rounded-xl border p-3 cursor-pointer transition flex flex-col justify-between",
-                      paymentMethod === "UPI_ONLINE"
-                        ? "border-[#E15A2B] bg-[#E15A2B]/5 ring-2 ring-[#E15A2B]/20"
-                        : "border-slate-200 bg-white hover:bg-slate-50"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <QrIcon className="h-4 w-4 text-emerald-600" />
-                      <span className="text-xs font-bold text-slate-900">UPI / Pay Now</span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Scan restaurant UPI QR on phone or instant digital payment.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bill Summary */}
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-600">
-                  <span>Subtotal ({cartItemCount} items)</span>
-                  <span className="font-semibold text-slate-900">
-                    {formatCurrency(cartSubtotal, restaurant.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Taxes & Service Charge</span>
-                  <span className="font-semibold text-slate-900">₹0.00</span>
-                </div>
-                <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-extrabold text-slate-900">
-                  <span>Total Amount</span>
-                  <span className="text-base" style={{ color: accent }}>
-                    {formatCurrency(cartSubtotal, restaurant.currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <button
-                type="button"
-                onClick={handlePlaceOrder}
-                disabled={submittingOrder}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95 cursor-pointer disabled:opacity-50"
-                style={{ backgroundColor: accent }}
+            <>
+              {/* Scrollable Sheet Body */}
+              <div
+                data-lenis-prevent
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[#FAF8F5]/60"
               >
-                {submittingOrder ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Placing Order with Kitchen...
-                  </>
-                ) : (
-                  <>
-                    <span>
-                      Place Table Order ({formatCurrency(cartSubtotal, restaurant.currency)})
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </>
+                {/* Duplicate Item Protection Warning */}
+                {duplicateCartItems.length > 0 && (
+                  <div className="rounded-2xl border border-amber-300/80 bg-amber-50 p-3.5 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="text-xs text-amber-950 leading-relaxed">
+                        <p className="font-bold">Already ordered on this table</p>
+                        <p className="text-amber-800 mt-0.5">
+                          You already ordered{" "}
+                          {duplicateCartItems
+                            .map(
+                              (e) =>
+                                `${e.item.name} (×${orderedQtyByName.get(e.item.name.trim().toLowerCase())})`
+                            )
+                            .join(", ")}
+                          . Keep only if you want another serving.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pl-6">
+                      {duplicateCartItems.map((e) => (
+                        <button
+                          key={e.item.id}
+                          type="button"
+                          onClick={() => removeFromCart(e.item.id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 cursor-pointer"
+                        >
+                          <X className="h-3 w-3" />
+                          Remove {e.item.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
+
+                {/* Items List Card */}
+                <div className="rounded-2xl border border-stone-200/80 bg-white divide-y divide-stone-100 overflow-hidden">
+                  {cartEntries.map(({ item, quantity }) => (
+                    <div key={item.id} className="flex items-center justify-between gap-2.5 p-3.5">
+                      <div className="flex items-start gap-2 min-w-0 flex-1">
+                        <div className="pt-0.5 shrink-0">
+                          <DietaryIndicator type={item.dietaryType} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-stone-900 leading-snug truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-stone-500 tabular-nums mt-0.5">
+                            {formatCurrency(item.price, restaurant.currency)} each
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="inline-flex items-center rounded-xl border border-stone-200 bg-stone-50 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => updateCartQuantity(item.id, -1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-stone-700 hover:bg-stone-100 cursor-pointer"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="w-7 text-center text-xs font-extrabold text-stone-900 tabular-nums">
+                            {quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQuantity(item.id, 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-stone-700 hover:bg-stone-100 cursor-pointer"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <span className="w-16 text-right font-extrabold text-sm text-stone-900 tabular-nums">
+                          {formatCurrency(item.price * quantity, restaurant.currency)}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-stone-400 hover:text-red-600 cursor-pointer p-1"
+                          aria-label={`Remove ${item.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Payment Method Selector (Full-width responsive cards) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-stone-500 block">
+                    Payment Method
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("CASH_AT_COUNTER")}
+                      className={cn(
+                        "text-left rounded-2xl border p-3.5 cursor-pointer transition flex items-start gap-3",
+                        paymentMethod === "CASH_AT_COUNTER"
+                          ? "border-[#E15A2B] bg-white ring-2 ring-[#E15A2B]/20"
+                          : "border-stone-200 bg-white hover:border-stone-300"
+                      )}
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
+                        <Receipt className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-bold text-stone-900">Pay at Counter</span>
+                          <span
+                            className={cn(
+                              "h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                              paymentMethod === "CASH_AT_COUNTER"
+                                ? "border-[#E15A2B]"
+                                : "border-stone-300"
+                            )}
+                          >
+                            {paymentMethod === "CASH_AT_COUNTER" && (
+                              <span className="h-2 w-2 rounded-full bg-[#E15A2B]" />
+                            )}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-stone-500 leading-snug">
+                          Cash, card, or UPI at the counter after dining.
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("UPI_ONLINE")}
+                      className={cn(
+                        "text-left rounded-2xl border p-3.5 cursor-pointer transition flex items-start gap-3",
+                        paymentMethod === "UPI_ONLINE"
+                          ? "border-[#E15A2B] bg-white ring-2 ring-[#E15A2B]/20"
+                          : "border-stone-200 bg-white hover:border-stone-300"
+                      )}
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                        <Smartphone className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-bold text-stone-900">UPI Direct</span>
+                          <span
+                            className={cn(
+                              "h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                              paymentMethod === "UPI_ONLINE"
+                                ? "border-[#E15A2B]"
+                                : "border-stone-300"
+                            )}
+                          >
+                            {paymentMethod === "UPI_ONLINE" && (
+                              <span className="h-2 w-2 rounded-full bg-[#E15A2B]" />
+                            )}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-stone-500 leading-snug">
+                          Pay directly via GPay, PhonePe, or Paytm (0% fee).
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cooking Instructions & Optional Guest Details */}
+                <div className="rounded-2xl border border-stone-200/80 bg-white p-3.5 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                      Cooking Instructions (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      placeholder="e.g. Less spicy, extra crispy, no onions..."
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:bg-white focus:border-[#E15A2B] focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                        Your Name (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="Guest name"
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:bg-white focus:border-[#E15A2B] focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                        Phone (Optional)
+                      </label>
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:bg-white focus:border-[#E15A2B] focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Clean Bill Summary */}
+                <div className="rounded-2xl bg-white border border-stone-200/80 p-4 space-y-2 text-xs">
+                  <div className="flex justify-between text-stone-600">
+                    <span>Items Subtotal ({cartItemCount})</span>
+                    <span className="font-semibold text-stone-900 tabular-nums">
+                      {formatCurrency(cartSubtotal, restaurant.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-stone-500">
+                    <span>Platform Fee</span>
+                    <span className="font-semibold text-emerald-700">Free (0%)</span>
+                  </div>
+                  <div className="flex justify-between items-baseline border-t border-stone-200/80 pt-2.5 text-sm font-extrabold text-stone-900">
+                    <span>Total Payable</span>
+                    <span className="text-lg tabular-nums" style={{ color: accent }}>
+                      {formatCurrency(cartSubtotal, restaurant.currency)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Bottom CTA Footer */}
+              <div className="px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white shrink-0">
+                <button
+                  type="button"
+                  onClick={handlePlaceOrder}
+                  disabled={submittingOrder}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3.5 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  style={{ backgroundColor: accent }}
+                >
+                  {submittingOrder ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending Order to Kitchen...
+                    </>
+                  ) : (
+                    <>
+                      <span className="tabular-nums">
+                        Place Order · {formatCurrency(cartSubtotal, restaurant.currency)}
+                      </span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Live Order Confirmation & Status Dialog */}
+      {/* Live Order Status & Pixel-Perfect Mobile Payment Bottom Sheet */}
       <Dialog open={orderStatusOpen} onOpenChange={setOrderStatusOpen}>
-        <DialogContent className="max-w-md p-6 max-h-[90vh] overflow-y-auto text-center">
+        <DialogContent
+          data-lenis-prevent
+          className="fixed inset-x-0 bottom-0 top-auto left-auto translate-x-0 translate-y-0 w-full max-w-none rounded-t-3xl rounded-b-none border-x-0 border-b-0 sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:right-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[calc(100%-2rem)] sm:max-w-md sm:rounded-3xl sm:border p-0 gap-0 overflow-hidden flex flex-col max-h-[92dvh] bg-white"
+        >
+          {/* Mobile Grab Handle */}
+          <div className="pt-2.5 pb-1 flex justify-center sm:hidden bg-white shrink-0">
+            <span className="h-1 w-10 rounded-full bg-stone-300" />
+          </div>
+
           {activeOrder ? (
-            <div className="space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <CheckCircle2 className="h-8 w-8" />
-              </div>
-
-              <div>
-                <h3 className="text-xl font-black text-slate-900">
-                  Order Placed Successfully!
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Order Number: <strong className="text-slate-800">{activeOrder.orderNumber}</strong>
-                  {activeOrder.tableNumber ? ` · Table ${activeOrder.tableNumber}` : ""}
-                </p>
-              </div>
-
-              {/* Status Visual Tracker */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Live Kitchen Status
-                </span>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-base font-extrabold text-slate-900">
-                    {activeOrder.status === "PENDING" && "🕒 Received — Waiting for kitchen"}
-                    {activeOrder.status === "CONFIRMED" && "👨‍🍳 Accepted by Kitchen"}
-                    {activeOrder.status === "PREPARING" && "🍳 Food is being prepared"}
-                    {activeOrder.status === "SERVED" && "🍽️ Served at your table"}
-                    {activeOrder.status === "COMPLETED" && "✅ Order Complete — Thank you!"}
-                    {activeOrder.status === "CANCELLED" && "❌ Order Cancelled"}
-                  </span>
-                  <span className="rounded-full bg-[#E15A2B]/10 px-2.5 py-0.5 text-xs font-bold text-[#E15A2B]">
-                    {activeOrder.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* UPI Payment Flow */}
-              {activeOrder.paymentMethod === "UPI_ONLINE" && (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                      <QrIcon className="h-4 w-4" /> UPI Payment
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                        activeOrder.paymentStatus === "PAID"
-                          ? "bg-emerald-600 text-white"
-                          : "bg-amber-200 text-amber-900"
-                      }`}
-                    >
-                      {activeOrder.paymentStatus === "PAID" ? "✓ Paid" : "Unpaid"}
-                    </span>
+            <>
+              {/* Sticky Header */}
+              <div className="px-5 pt-3 pb-3.5 sm:pt-5 border-b border-stone-200/80 bg-white shrink-0 pr-12">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+                      activeOrder.status === "CANCELLED"
+                        ? "bg-red-50 text-red-600"
+                        : "bg-emerald-50 text-emerald-600"
+                    )}
+                  >
+                    {activeOrder.status === "CANCELLED" ? (
+                      <XCircle className="h-5 w-5" />
+                    ) : (
+                      <CheckCircle2 className="h-5 w-5" />
+                    )}
                   </div>
-
-                  {activeOrder.paymentStatus !== "PAID" ? (
-                    <div className="flex flex-col items-center space-y-2">
-                      {upiQrDataUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={upiQrDataUrl}
-                          alt="UPI Payment QR"
-                          className="h-40 w-40 rounded-xl border border-emerald-200 bg-white p-2 shadow-xs"
-                        />
+                  <div className="min-w-0 text-left">
+                    <DialogTitle className="text-base sm:text-lg font-extrabold text-stone-900 tracking-tight truncate">
+                      Order {activeOrder.orderNumber}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-stone-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>{restaurant.name}</span>
+                      {activeOrder.tableNumber && (
+                        <>
+                          <span>·</span>
+                          <span className="font-semibold text-stone-700">
+                            Table {activeOrder.tableNumber}
+                          </span>
+                        </>
                       )}
-                      <p className="text-[11px] text-emerald-800">
-                        Scan with GPay, PhonePe, Paytm, or BHIM to pay{" "}
-                        <strong>{formatCurrency(activeOrder.totalAmount, "INR")}</strong>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleSimulatePayment}
-                        disabled={payingNow}
-                        className="mt-1 w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 cursor-pointer disabled:opacity-50"
-                      >
-                        {payingNow ? "Confirming..." : "Simulate / Confirm Instant Payment"}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xs font-semibold text-emerald-800">
-                      Payment received! Thank you for paying via UPI.
-                    </p>
-                  )}
+                    </DialogDescription>
+                  </div>
                 </div>
-              )}
 
-              {/* Order Items Summary */}
-              <div className="rounded-xl border border-slate-200 p-3 text-left space-y-1.5 text-xs">
-                <span className="font-semibold text-slate-800 block border-b border-slate-100 pb-1">
-                  Ordered Items
-                </span>
-                {activeOrder.items?.map((it) => (
-                  <div key={it.id} className="flex justify-between py-0.5 text-slate-600">
-                    <span>
-                      {it.quantity}x {it.name}
-                    </span>
-                    <span className="font-medium text-slate-900">
-                      {formatCurrency(it.subtotal, "INR")}
+                {/* Multi-Round Order Switcher */}
+                {placedOrders.length > 1 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pt-3 scrollbar-none">
+                    {placedOrders.map((ord, idx) => (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        onClick={() => setSelectedOrderId(ord.id)}
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1 text-[11px] font-bold border transition cursor-pointer tabular-nums",
+                          ord.id === activeOrder.id
+                            ? "bg-stone-900 text-white border-stone-900"
+                            : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
+                        )}
+                      >
+                        Round {placedOrders.length - idx} · {ord.orderNumber}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Scrollable Body */}
+              <div
+                data-lenis-prevent
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[#FAF8F5]/60 text-left"
+              >
+                {/* 4-Step Kitchen Progress Card */}
+                {(() => {
+                  const steps = [
+                    { key: "PENDING", label: "Received" },
+                    { key: "CONFIRMED", label: "Accepted" },
+                    { key: "PREPARING", label: "Cooking" },
+                    { key: "SERVED", label: "Served" },
+                  ] as const;
+                  const statusIndexMap: Record<ActiveOrder["status"], number> = {
+                    PENDING: 0,
+                    CONFIRMED: 1,
+                    PREPARING: 2,
+                    SERVED: 3,
+                    COMPLETED: 3,
+                    CANCELLED: -1,
+                  };
+                  const currentIdx = statusIndexMap[activeOrder.status];
+
+                  return (
+                    <div className="rounded-2xl border border-stone-200/80 bg-white p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                          Kitchen Status
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+                            activeOrder.status === "CANCELLED"
+                              ? "bg-red-50 text-red-700"
+                              : activeOrder.status === "COMPLETED" || activeOrder.status === "SERVED"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-amber-50 text-amber-800"
+                          )}
+                        >
+                          {activeOrder.status === "PENDING" && "Waiting for Kitchen"}
+                          {activeOrder.status === "CONFIRMED" && "Order Accepted"}
+                          {activeOrder.status === "PREPARING" && "Preparing Fresh"}
+                          {activeOrder.status === "SERVED" && "Served at Table"}
+                          {activeOrder.status === "COMPLETED" && "Completed"}
+                          {activeOrder.status === "CANCELLED" && "Cancelled"}
+                        </span>
+                      </div>
+
+                      {activeOrder.status !== "CANCELLED" && (
+                        <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                          {steps.map((step, i) => {
+                            const done = i <= currentIdx;
+                            return (
+                              <div key={step.key} className="space-y-1.5">
+                                <div
+                                  className={cn(
+                                    "h-1.5 rounded-full transition-colors",
+                                    done ? "bg-emerald-500" : "bg-stone-200"
+                                  )}
+                                />
+                                <p
+                                  className={cn(
+                                    "text-[10px] font-semibold text-center",
+                                    done ? "text-stone-900" : "text-stone-400"
+                                  )}
+                                >
+                                  {step.label}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Pixel-Perfect Payment Card */}
+                {activeOrder.status !== "CANCELLED" && (
+                  <div className="rounded-2xl border border-stone-200/80 bg-white overflow-hidden">
+                    {/* Payment Card Header */}
+                    <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-stone-100 bg-stone-50/70">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-bold text-stone-900">
+                          {activeOrder.paymentMethod === "UPI_ONLINE"
+                            ? "Direct UPI Payment"
+                            : "Counter Payment"}
+                        </span>
+                      </div>
+
+                      {activeOrder.paymentStatus === "PAID" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                          <Check className="h-3 w-3" /> Paid
+                        </span>
+                      ) : activeOrder.notes?.includes("verify on UPI") ? (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-900">
+                          Verifying with Staff
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-stone-200/80 px-2.5 py-0.5 text-[11px] font-bold text-stone-700">
+                          {activeOrder.paymentMethod === "UPI_ONLINE" ? "Payment Due" : "Pay Later"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-4 space-y-3.5">
+                      {/* Amount Hero Row */}
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs font-medium text-stone-500">Amount Payable</span>
+                        <span className="text-2xl font-black tracking-tight text-stone-900 tabular-nums">
+                          {formatCurrency(activeOrder.totalAmount, restaurant.currency)}
+                        </span>
+                      </div>
+
+                      {activeOrder.paymentStatus === "PAID" ? (
+                        <div className="rounded-xl bg-emerald-50 border border-emerald-200/80 px-3.5 py-2.5 text-xs font-medium text-emerald-900 flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>Payment verified by staff. Thank you for dining with us!</span>
+                        </div>
+                      ) : activeOrder.paymentMethod === "UPI_ONLINE" ? (
+                        <div className="space-y-3">
+                          {/* Direct UPI App Launch Button (Primary on Phones!) */}
+                          {activeUpiUri && (
+                            <a
+                              href={activeUpiUri}
+                              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm font-bold text-white shadow-xs transition hover:bg-stone-800 active:scale-[0.99]"
+                            >
+                              <Smartphone className="h-4 w-4" />
+                              <span className="tabular-nums">
+                                Open UPI App · {formatCurrency(activeOrder.totalAmount, "INR")}
+                              </span>
+                            </a>
+                          )}
+
+                          {/* Merchant UPI ID Copy Bar */}
+                          {restaurant.upiId?.trim() && (
+                            <div className="flex items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                                  Merchant UPI ID (0% Fee)
+                                </p>
+                                <p className="text-xs font-bold text-stone-800 truncate font-mono">
+                                  {restaurant.upiId.trim()}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleCopyUpiId}
+                                className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 cursor-pointer shrink-0"
+                              >
+                                {copiedUpi ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                    Copied
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" />
+                                    Copy
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Optional Collapsible QR for Scanning from Another Phone */}
+                          {upiQrDataUrl && (
+                            <div className="text-center">
+                              <button
+                                type="button"
+                                onClick={() => setShowQrOnScreen((v) => !v)}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer"
+                              >
+                                <QrIcon className="h-3.5 w-3.5" />
+                                {showQrOnScreen
+                                  ? "Hide QR code"
+                                  : "Paying from another phone? Show UPI QR"}
+                              </button>
+                              {showQrOnScreen && (
+                                <div className="mt-2.5 flex flex-col items-center rounded-xl border border-stone-200 bg-stone-50/80 p-3">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={upiQrDataUrl}
+                                    alt="UPI Payment QR"
+                                    className="h-40 w-40 rounded-xl border border-stone-200 bg-white p-2"
+                                  />
+                                  <p className="mt-2 text-[11px] text-stone-500">
+                                    Scan with GPay, PhonePe, Paytm, or BHIM
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Honest Staff-Verification Confirmation Step */}
+                          {activeOrder.notes?.includes("verify on UPI") ? (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-950 leading-relaxed">
+                              <p className="font-bold">Payment marked as sent</p>
+                              <p className="text-amber-800 mt-0.5">
+                                Staff will verify it on their UPI soundbox and update your receipt to Paid.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="pt-1 border-t border-stone-100 space-y-2">
+                              <input
+                                type="text"
+                                value={upiRefInput}
+                                onChange={(e) => setUpiRefInput(e.target.value)}
+                                placeholder="Optional: Last 4 digits of UTR / Ref No."
+                                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:bg-white focus:border-[#E15A2B] focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleNotifyUpiPaid}
+                                disabled={payingNow}
+                                className="w-full rounded-xl bg-emerald-600 py-2.5 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 cursor-pointer disabled:opacity-50 transition"
+                              >
+                                {payingNow
+                                  ? "Notifying Staff..."
+                                  : "I've Completed UPI Payment"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-stone-600 leading-relaxed">
+                          Relax and enjoy your meal. Pay via cash, card, or UPI at the counter when you&apos;re ready to leave.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Itemized Order Receipt */}
+                <div className="rounded-2xl border border-stone-200/80 bg-white p-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                    <span className="font-bold text-stone-900">Ordered Items</span>
+                    <span className="text-stone-400 tabular-nums">
+                      {activeOrder.items?.reduce((s, i) => s + i.quantity, 0) || 0} items
                     </span>
                   </div>
-                ))}
-                <div className="flex justify-between border-t border-slate-100 pt-1.5 font-bold text-slate-900">
-                  <span>Total Amount</span>
-                  <span>{formatCurrency(activeOrder.totalAmount, "INR")}</span>
+                  <div className="space-y-1.5">
+                    {activeOrder.items?.map((it) => (
+                      <div key={it.id} className="flex items-center justify-between gap-2 text-stone-700">
+                        <span className="truncate">
+                          <strong className="text-stone-900 tabular-nums">{it.quantity}×</strong>{" "}
+                          {it.name}
+                        </span>
+                        <span className="font-semibold text-stone-900 tabular-nums shrink-0">
+                          {formatCurrency(it.subtotal, restaurant.currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between border-t border-stone-100 pt-2.5 text-sm font-extrabold text-stone-900">
+                    <span>Order Total</span>
+                    <span className="tabular-nums">
+                      {formatCurrency(activeOrder.totalAmount, restaurant.currency)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              {/* Sticky Bottom Footer */}
+              <div className="px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t border-stone-200 bg-white shrink-0 flex flex-col sm:flex-row gap-2">
                 {(restaurant.whatsappNumber || restaurant.phone) && (
                   <a
                     href={`https://wa.me/${formatWhatsAppPhone(restaurant.whatsappNumber || restaurant.phone)}?text=${encodeURIComponent(
@@ -1635,7 +2081,7 @@ export function PublicMenuView({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 px-3 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-3 px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition"
                   >
                     Send on WhatsApp
                   </a>
@@ -1643,14 +2089,14 @@ export function PublicMenuView({
                 <button
                   type="button"
                   onClick={() => setOrderStatusOpen(false)}
-                  className="flex-1 rounded-xl bg-slate-900 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 cursor-pointer"
+                  className="flex-1 rounded-xl bg-stone-900 py-3 px-3 text-xs font-bold text-white hover:bg-stone-800 cursor-pointer transition"
                 >
                   Order More Dishes
                 </button>
               </div>
-            </div>
+            </>
           ) : (
-            <div className="py-6 text-sm text-slate-500">No active order</div>
+            <div className="py-10 px-5 text-center text-sm text-stone-500">No active order</div>
           )}
         </DialogContent>
       </Dialog>

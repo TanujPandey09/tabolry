@@ -9,6 +9,7 @@ import {
 } from "@/lib/tenant";
 import { createRestaurantSchema } from "@/lib/validators";
 import { generateSecureToken, slugify } from "@/lib/utils";
+import { findTrialIdentifierConflict } from "@/lib/trial-guard";
 
 async function ensureFreeTrialPlan() {
   const existing = await prisma.subscriptionPlan.findUnique({
@@ -79,6 +80,33 @@ export async function POST(request: Request) {
     const user = await requireAuth();
     const body = await request.json();
 
+    // Enforce plan maxRestaurants limit for non-admin owners
+    if (user.role !== "SUPER_ADMIN") {
+      const existingMemberships = await prisma.restaurantMembership.findMany({
+        where: { userId: user.id, role: "OWNER" },
+        include: {
+          restaurant: {
+            include: { subscription: { include: { plan: true } } },
+          },
+        },
+      });
+      if (existingMemberships.length > 0) {
+        const maxAllowed = Math.max(
+          1,
+          ...existingMemberships.map(
+            (m) => m.restaurant.subscription?.plan?.maxRestaurants ?? 1
+          )
+        );
+        if (existingMemberships.length >= maxAllowed) {
+          throw new ApiError(
+            403,
+            `Your current plan supports up to ${maxAllowed} restaurant location(s). Upgrade your plan to add another branch.`,
+            "PLAN_LIMIT_REACHED"
+          );
+        }
+      }
+    }
+
     const rawSlug = body.slug ? slugify(String(body.slug)) : slugify(String(body.name || ""));
     const data = createRestaurantSchema.parse({
       ...body,
@@ -96,6 +124,32 @@ export async function POST(request: Request) {
         "This restaurant URL slug is already taken. Please choose another.",
         "SLUG_TAKEN"
       );
+    }
+
+    // Prevent free-trial cycling by reusing the same phone, WhatsApp, UPI ID, or Restaurant Name + City
+    if (user.role !== "SUPER_ADMIN") {
+      const conflict = await findTrialIdentifierConflict({
+        name: data.name,
+        city: data.city,
+        phone: data.phone,
+        whatsappNumber: data.whatsappNumber,
+        upiId: data.upiId,
+      });
+      if (conflict) {
+        const label =
+          conflict.field === "upiId"
+            ? "UPI ID"
+            : conflict.field === "whatsappNumber"
+              ? "WhatsApp number"
+              : conflict.field === "restaurantName"
+                ? "restaurant name in this city"
+                : "phone number";
+        throw new ApiError(
+          409,
+          `This ${label} has already been used for a Tablory trial. Please sign in to your existing account and upgrade your plan to continue.`,
+          "TRIAL_ALREADY_USED"
+        );
+      }
     }
 
     const trialPlan = await ensureFreeTrialPlan();

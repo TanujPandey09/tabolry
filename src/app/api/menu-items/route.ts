@@ -62,6 +62,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = createMenuItemSchema.parse(body);
 
+    // Enforce subscription plan menu item limit
+    const maxMenuItems = ctx.restaurant.subscription?.plan?.maxMenuItems ?? 150;
+    const currentItemCount = await prisma.menuItem.count({
+      where: { restaurantId: ctx.restaurant.id },
+    });
+    if (currentItemCount >= maxMenuItems) {
+      throw new ApiError(
+        403,
+        `Your current plan supports up to ${maxMenuItems} menu items. Upgrade your plan to add more dishes.`,
+        "PLAN_LIMIT_REACHED"
+      );
+    }
+
     // Strictly verify category ownership to prevent cross-tenant linking
     let verifiedCategoryId: string | null = null;
     if (data.categoryId) {

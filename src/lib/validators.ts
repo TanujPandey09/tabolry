@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateUpiIdFormat } from "@/lib/upi";
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
@@ -29,6 +30,18 @@ export const updateAccountSchema = z.object({
 const hexColorRegex = /^#([0-9A-Fa-f]{6})$/;
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+const safeImageUrlSchema = z
+  .string()
+  .trim()
+  .refine(
+    (v) =>
+      v === "" ||
+      v.startsWith("/uploads/") ||
+      v.startsWith("https://") ||
+      v.startsWith("http://"),
+    "Image URL must be a valid https://, http://, or /uploads/ path"
+  );
+
 export const createRestaurantSchema = z.object({
   name: z.string().trim().min(2, "Restaurant name is required").max(100),
   slug: z
@@ -38,18 +51,24 @@ export const createRestaurantSchema = z.object({
     .min(2, "Slug must be at least 2 characters")
     .max(60)
     .regex(slugRegex, "Slug can only contain lowercase letters, numbers, and hyphens"),
-  logoUrl: z.string().trim().url().optional().or(z.literal("")).nullable(),
-  coverImageUrl: z.string().trim().url().optional().or(z.literal("")).nullable(),
+  logoUrl: safeImageUrlSchema.optional().nullable(),
+  coverImageUrl: safeImageUrlSchema.optional().nullable(),
   description: z.string().trim().max(500).optional().nullable(),
   phone: z.string().trim().max(25).optional().nullable(),
   whatsappNumber: z.string().trim().max(25).optional().nullable(),
   upiId: z
     .string()
     .trim()
-    .refine(
-      (v) => v === "" || /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(v),
-      "Enter a valid UPI ID (e.g. yourcafe@okaxis)"
-    )
+    .superRefine((v, ctx) => {
+      if (v === "") return;
+      const check = validateUpiIdFormat(v);
+      if (!check.valid) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: check.error || "Enter a valid Indian UPI ID (e.g. yourcafe@okbizaxis)",
+        });
+      }
+    })
     .optional()
     .nullable(),
   address: z.string().trim().max(200).optional().nullable(),
@@ -68,24 +87,8 @@ export const updateRestaurantSchema = createRestaurantSchema.partial().extend({
   isPublished: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
   onboardingStep: z.number().int().min(1).max(5).optional(),
-  logoUrl: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === "" || v.startsWith("/") || v.startsWith("http://") || v.startsWith("https://"),
-      "Invalid image URL"
-    )
-    .optional()
-    .nullable(),
-  coverImageUrl: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === "" || v.startsWith("/") || v.startsWith("http://") || v.startsWith("https://"),
-      "Invalid image URL"
-    )
-    .optional()
-    .nullable(),
+  logoUrl: safeImageUrlSchema.optional().nullable(),
+  coverImageUrl: safeImageUrlSchema.optional().nullable(),
 });
 
 export const createCategorySchema = z.object({
@@ -104,24 +107,10 @@ export const reorderSchema = z.object({
 export const createMenuItemSchema = z.object({
   name: z.string().trim().min(1, "Item name is required").max(120),
   description: z.string().trim().max(500).optional().nullable(),
-  imageUrl: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === "" || v.startsWith("/") || v.startsWith("http://") || v.startsWith("https://"),
-      "Invalid image URL"
-    )
-    .optional()
-    .nullable(),
+  imageUrl: safeImageUrlSchema.optional().nullable(),
   galleryImages: z
     .array(
-      z
-        .string()
-        .trim()
-        .refine(
-          (v) => v.startsWith("/") || v.startsWith("http://") || v.startsWith("https://"),
-          "Invalid gallery image URL"
-        )
+      safeImageUrlSchema.refine((v) => v !== "", "Invalid gallery image URL")
     )
     .max(4, "Maximum 4 additional photos allowed")
     .optional(),

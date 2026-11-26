@@ -11,6 +11,7 @@ import {
 import { updateRestaurantSchema } from "@/lib/validators";
 import { slugify } from "@/lib/utils";
 import { isLemonSqueezyConfigured, isRazorpayConfigured } from "@/lib/billing";
+import { findTrialIdentifierConflict, isSubscriptionLive } from "@/lib/trial-guard";
 import { z } from "zod";
 
 export async function GET() {
@@ -84,6 +85,49 @@ export async function PATCH(request: Request) {
         "Your restaurant is currently suspended or inactive and cannot be published.",
         "RESTAURANT_SUSPENDED"
       );
+    }
+
+    if (data.isPublished === true && !isSubscriptionLive(ctx.restaurant.subscription)) {
+      throw new ApiError(
+        403,
+        "Your free trial or subscription has expired. Upgrade your plan in Settings to publish your QR menu.",
+        "SUBSCRIPTION_EXPIRED"
+      );
+    }
+
+    // Prevent onboarding with fake details and swapping in an already-trialed business phone/UPI/name later
+    if (
+      ctx.user.role !== "SUPER_ADMIN" &&
+      ctx.restaurant.subscription?.status !== "ACTIVE" &&
+      (data.name !== undefined ||
+        data.city !== undefined ||
+        data.phone !== undefined ||
+        data.whatsappNumber !== undefined ||
+        data.upiId !== undefined)
+    ) {
+      const conflict = await findTrialIdentifierConflict({
+        name: data.name ?? ctx.restaurant.name,
+        city: data.city ?? ctx.restaurant.city,
+        phone: data.phone,
+        whatsappNumber: data.whatsappNumber,
+        upiId: data.upiId,
+        excludeRestaurantId: ctx.restaurant.id,
+      });
+      if (conflict) {
+        const label =
+          conflict.field === "upiId"
+            ? "UPI ID"
+            : conflict.field === "whatsappNumber"
+              ? "WhatsApp number"
+              : conflict.field === "restaurantName"
+                ? "restaurant name in this city"
+                : "phone number";
+        throw new ApiError(
+          409,
+          `This ${label} is already linked to another Tablory account. Upgrade your existing account instead of starting a new trial.`,
+          "TRIAL_ALREADY_USED"
+        );
+      }
     }
 
     const updated = await prisma.restaurant.update({
