@@ -337,7 +337,8 @@ export default function MenuManagementPage() {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <div className="overflow-x-auto mobile-scroll sm:overflow-visible">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Dish</TableHead>
@@ -442,13 +443,14 @@ export default function MenuManagementPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
           </CardContent>
         </Card>
       )}
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="w-full sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Menu Item" : "Add Menu Item"}</DialogTitle>
             <DialogDescription>

@@ -98,3 +98,72 @@ html.lenis body {
     animation: none;
   }
 }
+
+/* ============================================================================
+   RESPONSIVE FOUNDATION — 320px to 1024px+
+   Mobile-safe base utilities used across public page & dashboard.
+   ============================================================================ */
+
+/* Prevent horizontal overflow / lock viewport width */
+html, body {
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* Safe-area insets for notch devices (iPhone SE / modern mobiles) */
+.safe-area-p {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+.safe-area-px-4 {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+
+/* Minimum touch target 44x44 for mobile accessibility */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile-first horizontal scroll container for filter tabs / narrow lists */
+.mobile-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure cards/content never exceed small mobile width */
+.max-w-xs-safe {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Dialog responsive sizing */
+.dialog-mobile {
+  width: 100%;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  margin: auto;
+}
+
+/* 1024px+ (lg) container refinements */
+@media (min-width: 1024px) {
+  .container-lg-px {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Reduce motion on small screens to preserve performance */
+@media (max-width: 640px) {
+  .reduce-motion-mobile,
+  .reduce-motion-mobile * {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01s !important;
+  }
+}

@@ -75,7 +75,18 @@ A transparent breakdown of **what is completed & verified right now** versus **w
 - [ ] **Item Tags & Spice Level**: Add optional badges (`Bestseller`, `Chef's Special`, `Spicy`, `Jain Available`) and half/full portion price variants.
 - [ ] **Bulk Menu Import (CSV/Excel)**: Let onboarding coordinators upload an existing restaurant menu spreadsheet in seconds.
 
-### v2 — Commercial Scale (Post Willingness-to-Pay Validation)
-- [ ] **Razorpay Subscription Billing**: Automated UPI AutoPay / card recurring billing for Starter & Growth plans with webhook sync.
+### v2 — Commercial Scale, Hybrid Mid-Meal Dining & Petpooja-Style Counter POS
+- [x] **Dual-Gateway Subscription Billing**: Razorpay (India INR) + Lemon Squeezy (Global USD) with HMAC webhook sync.
+- [x] **Direct Merchant UPI (0% Fee) + 3-Layer NPCI Verification**: Indian PSP handle allowlist, Razorpay VPA Validation API (`/api/upi/verify`), and ₹1 Test QR in Restaurant Profile.
+- [x] **Anti-Abuse & Trial Loophole Guards**: Expired trial public lockout, disposable email & Gmail alias blocking, Phone/WhatsApp/UPI/Name+City duplicate trial prevention, Fake-PAID UPI scam block, prank order rate limit (5/15m), and sequential daily order numbers (`ORD-101`).
+- [ ] **Phase 2 — Mid-Meal Hybrid Bread/Roti Add-On Flow ("Curry Hands" Solution)**:
+  - Staff-side 1-tap `+ Add Item / Roti` on active table orders in `/dashboard/orders` (auto-updates guest's phone bill in real time).
+  - Guest-side 1-tap knuckle buttons (`🔔 Call Waiter` & `🫓 +1 Repeat Last Bread/Drink`) without re-scanning QR.
+  - Server-backed **Unified Running Table Tab** (multiple KOT rounds `Round 1`, `Round 2` combined into 1 single end-of-meal bill).
+  - **Portion Variants (`Half / Full`)** & paid add-ons + 60-second guest self-cancel window while order is `PENDING`.
+- [ ] **Phase 3 — Petpooja-Style Counter & Waiter POS Inside Tablory (`/dashboard/pos`)**:
+  - Live Visual Table Floor Grid (Empty / Occupied / Running Total / Bill Requested).
+  - Fast Counter POS Slide-Over Sheet for Walk-In Dine-In, Takeaway / Parcel, and Counter Quick-Bills with dish short-code search.
+  - Indian GST Billing Engine (`5% GST` → `2.5% CGST + 2.5% SGST`), packaging charges, flat/`%` discounts, rupee round-off, and Split Payment (`Cash + UPI`).
+  - 1-Tap `58mm` / `80mm` Thermal KOT & Customer Receipt Printing + Staff PIN Roles & End-of-Day Z-Report (Cash in Drawer vs UPI vs Card).
 - [ ] **Hindi + English Bilingual Menu Support**: Let customers toggle menu language cleanly.
-- [ ] **Optional Table Ordering / Waiter Call**: Opt-in upgrade tier for restaurants that want direct table ordering or WhatsApp order handoff.

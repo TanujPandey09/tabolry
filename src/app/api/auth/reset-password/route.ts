@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, ApiError } from "@/lib/tenant";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimitDistributed, getClientIp } from "@/lib/rate-limit";
 import {
   verifyPasswordResetTokenPayload,
   matchesPasswordFingerprint,
@@ -20,7 +20,7 @@ const resetSchema = z.object({
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const limit = checkRateLimit(`reset-pwd:${ip}`, 15, 15 * 60 * 1000);
+    const limit = await checkRateLimitDistributed(`reset-pwd:${ip}`, 15, 15 * 60 * 1000);
     if (!limit.allowed) {
       throw new ApiError(
         429,

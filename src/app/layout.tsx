@@ -1,7 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.tablory.online";
 

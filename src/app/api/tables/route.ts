@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRestaurantContext, handleApiError, ApiError } from "@/lib/tenant";
+import {
+  requireRestaurantContext,
+  assertActiveSubscription,
+  handleApiError,
+  ApiError,
+} from "@/lib/tenant";
 import { createTableSchema } from "@/lib/validators";
 import { generateSecureToken, getAppBaseUrl } from "@/lib/utils";
 import { buildMenuUrl, generateQrDataUrl } from "@/lib/qr";
@@ -111,6 +116,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const ctx = await requireRestaurantContext();
+    assertActiveSubscription(ctx);
     const baseUrl = getAppBaseUrl(request.url);
     const body = await request.json();
 

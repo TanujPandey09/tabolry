@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, ApiError } from "@/lib/tenant";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimitDistributed, getClientIp } from "@/lib/rate-limit";
 import { createPasswordResetToken } from "@/lib/password-reset";
 import { sendPasswordResetEmail } from "@/lib/email";
 
@@ -13,7 +13,7 @@ const forgotSchema = z.object({
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const limit = checkRateLimit(`forgot-pwd:${ip}`, 10, 15 * 60 * 1000);
+    const limit = await checkRateLimitDistributed(`forgot-pwd:${ip}`, 10, 15 * 60 * 1000);
     if (!limit.allowed) {
       throw new ApiError(
         429,
@@ -24,6 +24,18 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { email } = forgotSchema.parse(body);
+
+    // Per-email rate limit (max 3 reset emails per 15 min) to prevent inbox bombing & protect Resend quota
+    const emailLimit = await checkRateLimitDistributed(
+      `forgot-pwd-email:${email}`,
+      3,
+      15 * 60 * 1000
+    );
+    if (!emailLimit.allowed) {
+      return NextResponse.json({
+        message: "If an account exists for that email, a password reset link has been sent.",
+      });
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },

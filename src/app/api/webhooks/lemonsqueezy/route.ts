@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import {
   activateSubscriptionFromPayment,
   updateSubscriptionStatusByExternalId,
@@ -56,8 +57,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: "Missing custom_data metadata" });
   }
 
+  const plan = await prisma.subscriptionPlan.findUnique({
+    where: { id: planId },
+  });
+  if (!plan) {
+    return NextResponse.json({ received: true, skipped: "Unknown planId" });
+  }
+
   const externalPaymentId = `ls_${eventName}_${String(data.id || Date.now())}`;
   const totalCents = Number(attrs.total || attrs.subtotal || 0);
+  if (totalCents <= 0) {
+    return NextResponse.json({ error: "Invalid payment total" }, { status: 400 });
+  }
 
   await activateSubscriptionFromPayment({
     restaurantId,

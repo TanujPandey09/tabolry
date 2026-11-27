@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRestaurantContext, handleApiError, ApiError } from "@/lib/tenant";
+import {
+  requireRestaurantContext,
+  assertActiveSubscription,
+  handleApiError,
+  ApiError,
+} from "@/lib/tenant";
 import { getAppBaseUrl } from "@/lib/utils";
 import {
   buildMenuUrl,
@@ -14,6 +19,7 @@ export async function GET(
 ) {
   try {
     const ctx = await requireRestaurantContext();
+    assertActiveSubscription(ctx);
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const format = (searchParams.get("format") || "png").toLowerCase();

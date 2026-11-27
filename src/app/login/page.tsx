@@ -69,15 +69,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#FAF8F5] px-4 py-12">
-      {/* Ambient warm glow */}
-      <div className="absolute top-1/4 h-72 w-72 rounded-full bg-gradient-to-tr from-[#E15A2B]/10 to-amber-500/10 blur-3xl pointer-events-none" />
-
-      <Link href="/" className="mb-6 flex items-center z-10">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-[#FAF8F5] px-4 py-8 sm:py-12">
+      <Link href="/" className="mb-6 flex items-center">
         <TabloryLogo size="lg" />
       </Link>
 
-      <Card className="w-full max-w-md rounded-3xl border border-stone-200/80 bg-white shadow-xl shadow-stone-200/40 z-10 p-1 sm:p-2">
+      <Card className="w-full max-w-md rounded-2xl border border-stone-200/90 bg-white shadow-sm p-1 sm:p-2">
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl">Sign in to your account</CardTitle>
           <CardDescription>

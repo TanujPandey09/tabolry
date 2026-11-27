@@ -221,7 +221,7 @@ export function DashboardShell({
             className="fixed inset-0 bg-stone-950/40 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl">
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white shadow-2xl">
             {sidebarContent}
           </aside>
         </div>
@@ -264,7 +264,7 @@ export function DashboardShell({
         </header>
 
         {/* Mobile Navbar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-stone-200/80 bg-white/95 backdrop-blur-md px-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-stone-200/80 bg-white/95 backdrop-blur-md safe-area-px-4 lg:hidden">
           <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
@@ -295,9 +295,9 @@ export function DashboardShell({
         {/* Native-App-Style Mobile Bottom Navigation */}
         <nav
           aria-label="Mobile quick navigation"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/90 bg-white/95 backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200/90 bg-white/95 backdrop-blur-md lg:hidden pb-[max(env(safe-area-inset-bottom),0.75rem)]"
         >
-          <div className="grid h-16 grid-cols-5 items-center px-1">
+          <div className="grid h-16 grid-cols-5 items-center px-1 safe-area-px-4">
             {navItems
               .filter((item) =>
                 [

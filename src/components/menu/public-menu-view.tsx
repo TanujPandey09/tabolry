@@ -612,7 +612,7 @@ export function PublicMenuView({
   return (
     <div
       className={cn(
-        "min-h-screen pb-28",
+        "min-h-screen overflow-x-hidden pb-28",
         isClassic
           ? "bg-[#FAF7F2] text-stone-900"
           : isMinimal
@@ -623,8 +623,8 @@ export function PublicMenuView({
     >
       {/* Editorial Hero Header */}
       <header className="relative">
-        {/* Cover Banner */}
-        <div className="relative h-44 w-full overflow-hidden sm:h-56">
+        {/* Cover Banner (compact on 320x538 screens so dishes appear above the fold) */}
+        <div className="relative h-36 w-full overflow-hidden sm:h-56">
           {restaurant.coverImageUrl ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -688,18 +688,18 @@ export function PublicMenuView({
         </div>
 
         {/* Restaurant Identity Card - Cleanly protected on elevated white surface */}
-        <div className="relative mx-auto max-w-2xl px-4 -mt-8 z-20">
+        <div className="relative mx-auto max-w-2xl px-3 sm:px-4 -mt-7 sm:-mt-8 z-20">
           <div
             className={cn(
-              "rounded-3xl border border-stone-200/80 bg-white p-5 shadow-xl sm:p-6",
+              "rounded-2xl sm:rounded-3xl border border-stone-200/80 bg-white p-3.5 sm:p-6 shadow-md",
               isClassic && "border-stone-200 bg-[#FAF7F2]"
             )}
           >
             {/* Top row: Logo overlapping card edge on left, Dine-In Badge on right */}
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2.5">
               <div
                 className={cn(
-                  "relative -mt-12 sm:-mt-14 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg sm:h-22 sm:w-22",
+                  "relative -mt-10 sm:-mt-14 flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-md sm:h-22 sm:w-22",
                   isClassic && "rounded-full border-stone-100"
                 )}
               >
@@ -788,24 +788,24 @@ export function PublicMenuView({
       </header>
 
       {/* Sticky Interactive Filter Bar */}
-      <div className="sticky top-0 z-30 mt-4 border-y border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
-        <div className="mx-auto max-w-2xl px-4 py-3 space-y-3">
+      <div className="sticky top-0 z-30 mt-3 sm:mt-4 border-y border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
+        <div className="mx-auto max-w-2xl px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3">
           {/* Search Input & Filter Pills */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search dishes..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#E15A2B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
+                className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#E15A2B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -816,11 +816,12 @@ export function PublicMenuView({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortMode)}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20 cursor-pointer"
+              aria-label="Sort dishes"
+              className="h-9 sm:h-10 max-w-[106px] sm:max-w-none shrink-0 rounded-xl border border-slate-200 bg-white px-2 sm:px-3 text-[11px] sm:text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/20 cursor-pointer"
             >
-              <option value="RECOMMENDED">Sort: Featured</option>
-              <option value="PRICE_ASC">Price: Low to High</option>
-              <option value="PRICE_DESC">Price: High to Low</option>
+              <option value="RECOMMENDED">Featured</option>
+              <option value="PRICE_ASC">Price: Low–High</option>
+              <option value="PRICE_DESC">Price: High–Low</option>
             </select>
           </div>
 
@@ -1015,157 +1016,162 @@ export function PublicMenuView({
                         }
                       }}
                       className={cn(
-                        "group relative flex items-stretch justify-between gap-4 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/40",
+                        "group relative flex items-start justify-between gap-3.5 sm:gap-4 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/40",
                         template === "MODERN" &&
-                          "rounded-3xl border border-stone-200/80 bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:border-stone-300 hover:shadow-md",
+                          "rounded-2xl border border-stone-200/90 bg-white p-3.5 sm:p-4 hover:border-stone-300",
                         isClassic &&
-                          "rounded-2xl border border-stone-200 bg-[#FAF7F2] p-4 shadow-xs hover:border-stone-300",
+                          "rounded-2xl border border-stone-200 bg-[#FAF7F2] p-3.5 sm:p-4 hover:border-stone-300",
                         isMinimal && "py-4 hover:bg-slate-50/60 px-2 -mx-2 rounded-xl",
                         !item.isAvailable && "opacity-70"
                       )}
                     >
-                      {/* Text Content */}
-                      <div className="flex min-w-0 flex-1 flex-col justify-between space-y-2">
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
+                      {/* Left Column: Meta, Title, Clean Price, Description */}
+                      <div className="flex min-w-0 flex-1 flex-col space-y-1.5">
+                        {/* Meta Row: Dietary + Ordered Badge + Subtle Bookmark */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                             <DietaryIndicator type={item.dietaryType} />
                             {alreadyOrderedQty > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-800 tabular-nums">
+                              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-800 tabular-nums">
                                 <Check className="h-2.5 w-2.5" />
                                 Ordered ×{alreadyOrderedQty}
                               </span>
                             )}
                             {!item.isAvailable && (
-                              <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                              <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
                                 Sold Out
                               </span>
                             )}
                           </div>
 
-                          <h3
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleShortlist(item.id, item.name);
+                            }}
+                            aria-label={
+                              isSaved ? "Remove from shortlist" : "Save to shortlist"
+                            }
                             className={cn(
-                              "text-base font-bold leading-snug text-slate-900 group-hover:text-[#E15A2B] transition-colors",
-                              isClassic && "font-serif text-[17px]"
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition cursor-pointer",
+                              isSaved
+                                ? "text-[#E15A2B] bg-orange-50"
+                                : "text-stone-400 hover:bg-stone-100 hover:text-stone-600"
                             )}
                           >
-                            {item.name}
-                          </h3>
-
-                          {item.description && (
-                            <p className="text-xs sm:text-sm leading-relaxed text-slate-500 line-clamp-2">
-                              {item.description}
-                            </p>
-                          )}
+                            {isSaved ? (
+                              <BookmarkCheck className="h-3.5 w-3.5" />
+                            ) : (
+                              <Bookmark className="h-3.5 w-3.5" />
+                            )}
+                          </button>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        {/* Dish Name */}
+                        <h3
+                          className={cn(
+                            "text-[15px] sm:text-base font-bold leading-snug text-stone-950 group-hover:text-[#E15A2B] transition-colors",
+                            isClassic && "font-serif text-[17px]"
+                          )}
+                        >
+                          {item.name}
+                        </h3>
+
+                        {/* Dedicated Clean Price Line (never squished on 360px phones) */}
+                        <div className="flex items-baseline gap-2">
                           <span
-                            className="text-base font-extrabold tracking-tight"
-                            style={{ color: item.isAvailable ? "#0F172A" : "#64748B" }}
+                            className={cn(
+                              "text-[15px] sm:text-base font-extrabold tracking-tight tabular-nums",
+                              item.isAvailable ? "text-stone-950" : "text-stone-400 line-through"
+                            )}
                           >
                             {formatCurrency(item.price, restaurant.currency)}
                           </span>
-
-                          <div className="flex items-center gap-2">
-                            {/* Interactive Order Add / Stepper */}
-                            {item.isAvailable && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center"
-                              >
-                                {inCartQty === 0 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => addToCart(item)}
-                                    className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 cursor-pointer"
-                                    style={{ backgroundColor: accent }}
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                    ADD
-                                  </button>
-                                ) : (
-                                  <div className="inline-flex items-center rounded-full border border-slate-300 bg-slate-50 p-0.5 shadow-xs">
-                                    <button
-                                      type="button"
-                                      onClick={() => updateCartQuantity(item.id, -1)}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                      <Minus className="h-3.5 w-3.5" />
-                                    </button>
-                                    <span className="w-7 text-center text-xs font-bold text-slate-900">
-                                      {inCartQty}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => updateCartQuantity(item.id, 1)}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                      <Plus className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Bookmark Save Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleShortlist(item.id, item.name);
-                              }}
-                              aria-label={
-                                isSaved ? "Remove from shortlist" : "Save to shortlist"
-                              }
-                              className={cn(
-                                "inline-flex items-center gap-1 rounded-full border p-1.5 text-[11px] font-semibold transition cursor-pointer",
-                                isSaved
-                                  ? "border-transparent text-white"
-                                  : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                              )}
-                              style={isSaved ? { backgroundColor: accent } : undefined}
-                            >
-                              {isSaved ? (
-                                <BookmarkCheck className="h-3.5 w-3.5" />
-                              ) : (
-                                <Bookmark className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-                          </div>
                         </div>
+
+                        {/* Dish Description */}
+                        {item.description && (
+                          <p className="text-xs sm:text-[13px] leading-relaxed text-stone-500 line-clamp-2 pt-0.5">
+                            {item.description}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Food Image */}
-                      {item.imageUrl ? (
-                        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-stone-100 bg-stone-100 sm:h-32 sm:w-32 shadow-2xs">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            loading="lazy"
+                      {/* Right Column: Dish Photo + Anchored ADD / Stepper (sized cleanly for 320px width) */}
+                      <div className="flex shrink-0 flex-col items-center">
+                        {item.imageUrl ? (
+                          <div className="relative h-22 w-22 sm:h-28 sm:w-28 overflow-hidden rounded-2xl border border-stone-200/70 bg-stone-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              loading="lazy"
+                              className={cn(
+                                "h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
+                                !item.isAvailable && "grayscale"
+                              )}
+                            />
+                            {!item.isAvailable ? (
+                              <div className="absolute inset-x-0 bottom-0 bg-stone-950/80 py-0.5 text-center text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white">
+                                Sold Out
+                              </div>
+                            ) : (item.galleryImages?.length || 0) > 0 ? (
+                              <span className="absolute top-1.5 right-1.5 rounded-full bg-stone-950/75 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white backdrop-blur-xs">
+                                +{(item.galleryImages?.length || 0)}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {/* Interactive Order Add / Stepper */}
+                        {item.isAvailable && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
                             className={cn(
-                              "h-full w-full object-cover transition-transform duration-500 group-hover:scale-108",
-                              !item.isAvailable && "grayscale"
+                              "relative z-10 flex items-center justify-center",
+                              item.imageUrl ? "-mt-3.5 sm:-mt-4" : "mt-1.5"
                             )}
-                          />
-                          {!item.isAvailable ? (
-                            <div className="absolute inset-x-0 bottom-0 bg-slate-900/80 backdrop-blur-xs py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
-                              Sold Out
-                            </div>
-                          ) : (item.galleryImages?.length || 0) > 0 ? (
-                            <span className="absolute bottom-1.5 right-1.5 rounded-full bg-stone-950/75 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
-                              +{(item.galleryImages?.length || 0)} photos
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-2xl border border-stone-200/60 bg-gradient-to-br from-stone-50 to-stone-100 text-stone-400">
-                          <Utensils className="h-6 w-6 opacity-60" />
-                          <span className="mt-1 text-[10px] font-medium text-stone-500">
-                            Chef's Special
-                          </span>
-                        </div>
-                      )}
+                          >
+                            {inCartQty === 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => addToCart(item)}
+                                className="inline-flex h-8 sm:h-9 w-[80px] sm:w-[96px] items-center justify-center gap-1 rounded-xl border border-stone-200 bg-white text-[11px] sm:text-xs font-extrabold tracking-wide shadow-sm transition hover:bg-stone-50 active:scale-[0.97] cursor-pointer"
+                                style={{ color: accent }}
+                              >
+                                <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                ADD
+                              </button>
+                            ) : (
+                              <div
+                                className="inline-flex h-8 sm:h-9 w-[80px] sm:w-[96px] items-center justify-between rounded-xl px-1 text-white shadow-sm"
+                                style={{ backgroundColor: accent }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => updateCartQuantity(item.id, -1)}
+                                  aria-label={`Remove one ${item.name}`}
+                                  className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg hover:bg-white/15 cursor-pointer"
+                                >
+                                  <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                </button>
+                                <span className="text-[11px] sm:text-xs font-extrabold tabular-nums">
+                                  {inCartQty}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateCartQuantity(item.id, 1)}
+                                  aria-label={`Add one more ${item.name}`}
+                                  className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg hover:bg-white/15 cursor-pointer"
+                                >
+                                  <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </article>
                   );
                 })}
@@ -1188,7 +1194,7 @@ export function PublicMenuView({
 
       {/* Floating Bottom Bar: Active Order Status or Table Cart Bar */}
       {!isPreview && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 mx-auto flex max-w-xl flex-col gap-2 px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-xl flex-col gap-2 px-3 sm:px-4">
           {/* If there is an active placed order, show live status button */}
           {activeOrder && (
             <button
@@ -1222,18 +1228,19 @@ export function PublicMenuView({
 
           {/* Cart Floating Bar */}
           {cartItemCount > 0 && (
-            <div className="pointer-events-auto flex items-center justify-between rounded-2xl p-3 text-white shadow-2xl"
+            <div
+              className="pointer-events-auto flex items-center justify-between gap-2 rounded-2xl p-2.5 sm:p-3 text-white shadow-2xl"
               style={{ backgroundColor: accent }}
             >
-              <div className="flex items-center gap-3 pl-1">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-                  <ShoppingBag className="h-5 w-5" />
+              <div className="flex items-center gap-2.5 pl-0.5 min-w-0">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                  <ShoppingBag className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 truncate">
                     {table ? `Table ${table.tableNumber} Order` : "Your Order"}
                   </p>
-                  <p className="text-sm font-extrabold">
+                  <p className="text-xs sm:text-sm font-extrabold tabular-nums truncate">
                     {cartItemCount} {cartItemCount === 1 ? "item" : "items"} ·{" "}
                     {formatCurrency(cartSubtotal, restaurant.currency)}
                   </p>
@@ -1243,10 +1250,10 @@ export function PublicMenuView({
               <button
                 type="button"
                 onClick={() => setOrderModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-900 shadow-md transition hover:bg-slate-100 cursor-pointer"
+                className="flex shrink-0 items-center gap-1 rounded-xl bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-slate-900 shadow-md transition hover:bg-slate-100 cursor-pointer"
               >
                 <span>View Order</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             </div>
           )}

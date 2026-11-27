@@ -154,6 +154,16 @@ export async function POST(req: Request) {
     const taxAmount = new Decimal("0.00");
     const totalAmount = subtotal;
 
+    if (subtotalNum > 25000) {
+      return NextResponse.json(
+        {
+          error:
+            "For large group or banquet orders above ₹25,000, please confirm directly with your server.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Generate collision-free daily sequential order number per restaurant (e.g. ORD-101, ORD-102)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);

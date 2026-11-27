@@ -95,6 +95,27 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Gate Classic and Minimal templates to Growth plan (or active 14-day Free Trial preview)
+    if (
+      data.template &&
+      (data.template === "CLASSIC" || data.template === "MINIMAL") &&
+      ctx.user.role !== "SUPER_ADMIN"
+    ) {
+      const planCode = ctx.restaurant.subscription?.plan?.code?.toUpperCase();
+      const subStatus = ctx.restaurant.subscription?.status;
+      const canUsePremiumTemplates =
+        (planCode === "GROWTH" && subStatus === "ACTIVE") ||
+        (subStatus === "TRIALING" && isSubscriptionLive(ctx.restaurant.subscription));
+
+      if (!canUsePremiumTemplates) {
+        throw new ApiError(
+          403,
+          "Classic Bistro and Minimal templates are available on the Growth plan. Upgrade in Settings to unlock all 3 templates.",
+          "PLAN_UPGRADE_REQUIRED"
+        );
+      }
+    }
+
     // Prevent onboarding with fake details and swapping in an already-trialed business phone/UPI/name later
     if (
       ctx.user.role !== "SUPER_ADMIN" &&

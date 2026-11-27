@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isSubscriptionLive } from "@/lib/trial-guard";
 
 export const ACTIVE_RESTAURANT_COOKIE = "menuqr_active_restaurant";
 
@@ -130,6 +131,23 @@ export async function requireRestaurantContext() {
       role: m.role,
     })),
   };
+}
+
+/**
+ * Ensures the restaurant's trial or paid subscription is currently active before
+ * allowing mutations (adding dishes/categories/tables) or QR code downloads.
+ */
+export function assertActiveSubscription(
+  ctx: Awaited<ReturnType<typeof requireRestaurantContext>>
+): void {
+  if (ctx.user.role === "SUPER_ADMIN") return;
+  if (!isSubscriptionLive(ctx.restaurant.subscription)) {
+    throw new ApiError(
+      403,
+      "Your 14-day free trial or subscription has expired. Upgrade your plan in Settings to continue.",
+      "SUBSCRIPTION_EXPIRED"
+    );
+  }
 }
 
 export function handleApiError(error: unknown) {

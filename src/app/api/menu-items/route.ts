@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRestaurantContext, handleApiError, ApiError } from "@/lib/tenant";
+import {
+  requireRestaurantContext,
+  assertActiveSubscription,
+  handleApiError,
+  ApiError,
+} from "@/lib/tenant";
 import { createMenuItemSchema } from "@/lib/validators";
 import type { Prisma } from "@prisma/client";
 
@@ -59,6 +64,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const ctx = await requireRestaurantContext();
+    assertActiveSubscription(ctx);
     const body = await request.json();
     const data = createMenuItemSchema.parse(body);
 

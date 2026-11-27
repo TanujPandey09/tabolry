@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "@/components/ui/icons";
-import { TabloryLogo } from "@/components/ui/tablory-logo";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Tablory",
@@ -11,23 +11,10 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-stone-900 antialiased">
-      <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#FAF8F5]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/" className="transition hover:opacity-85">
-            <TabloryLogo size="sm" />
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-600 transition hover:text-stone-900"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Home
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-stone-900 antialiased">
+      <SiteHeader />
 
-      <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+      <main className="flex-1 mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="rounded-2xl border border-stone-200/90 bg-white p-6 shadow-sm sm:p-10">
           <div className="border-b border-stone-100 pb-6">
             <span className="inline-block rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-brand">
@@ -149,22 +136,7 @@ export default function PrivacyPolicyPage() {
         </div>
       </main>
 
-      <footer className="border-t border-stone-200 bg-white py-6 text-center text-xs text-stone-500">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-5 px-4">
-          <Link href="/privacy" className="font-medium text-stone-900">
-            Privacy Policy
-          </Link>
-          <Link href="/terms" className="hover:text-stone-900">
-            Terms &amp; Conditions
-          </Link>
-          <Link href="/refund-policy" className="hover:text-stone-900">
-            Refund Policy
-          </Link>
-          <Link href="/contact" className="hover:text-stone-900">
-            Contact Us
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRestaurantContext, handleApiError } from "@/lib/tenant";
+import {
+  requireRestaurantContext,
+  assertActiveSubscription,
+  handleApiError,
+} from "@/lib/tenant";
 import { createCategorySchema } from "@/lib/validators";
 
 const DEFAULT_CATEGORIES = [
@@ -31,6 +35,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const ctx = await requireRestaurantContext();
+    assertActiveSubscription(ctx);
     const body = await request.json();
 
     // Support 1-click creation of default suggested categories during onboarding

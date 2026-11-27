@@ -235,8 +235,9 @@ export default function DashboardOrdersPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-        {[
+      <div className="mobile-scroll border-b border-slate-200 pb-3">
+        <div className="inline-flex min-w-max gap-2">
+          {[
           { key: "ACTIVE", label: "Active Orders" },
           { key: "PENDING", label: `Pending (${metrics.pending})` },
           { key: "PREPARING", label: "In Kitchen" },
@@ -256,6 +257,7 @@ export default function DashboardOrdersPage() {
             {tab.label}
           </button>
         ))}
+        </div>
       </div>
 
       {/* Orders List */}

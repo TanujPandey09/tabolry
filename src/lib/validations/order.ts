@@ -13,11 +13,16 @@ export const createOrderSchema = z.object({
     .array(
       z.object({
         menuItemId: z.string().min(1, "Item ID is required"),
-        quantity: z.number().int().min(1, "Quantity must be at least 1").max(50),
+        quantity: z
+          .number()
+          .int()
+          .min(1, "Quantity must be at least 1")
+          .max(15, "Maximum 15 quantity per dish in a single order"),
         notes: z.string().max(200).optional().nullable(),
       })
     )
-    .min(1, "At least one item must be ordered"),
+    .min(1, "At least one item must be ordered")
+    .max(20, "Maximum 20 distinct dishes per single order"),
 });
 
 export const updateOrderStatusSchema = z.object({

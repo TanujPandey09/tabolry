@@ -265,7 +265,7 @@ export function NotificationCenter() {
 
       {/* Popover Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 top-11 z-50 w-[350px] sm:w-[420px] rounded-2xl border border-stone-200/90 bg-white shadow-2xl backdrop-blur-xl animate-in fade-in-50 slide-in-from-top-2 overflow-hidden">
+        <div className="absolute -right-2 sm:right-0 top-11 z-50 w-[calc(100vw-1.5rem)] max-w-[350px] sm:w-[420px] sm:max-w-none rounded-2xl border border-stone-200/90 bg-white shadow-2xl backdrop-blur-xl animate-in fade-in-50 slide-in-from-top-2 overflow-hidden">
           {/* Header */}
           <div className="border-b border-stone-100 bg-stone-50/70 p-3.5">
             <div className="flex items-center justify-between">

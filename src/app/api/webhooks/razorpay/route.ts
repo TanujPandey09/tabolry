@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import {
   activateSubscriptionFromPayment,
   verifyHmacSha256,
@@ -42,12 +43,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: "Missing subscription metadata" });
   }
 
+  const plan = await prisma.subscriptionPlan.findUnique({
+    where: { id: planId },
+  });
+  if (!plan) {
+    return NextResponse.json({ received: true, skipped: "Unknown planId" });
+  }
+
+  const expectedAmountInr =
+    billingCycle === "YEARLY" ? Number(plan.yearlyPrice) : Number(plan.monthlyPrice);
+  const paidAmountInr = Number(paymentEntity.amount || 0) / 100;
+
+  if (paidAmountInr < expectedAmountInr) {
+    return NextResponse.json(
+      { error: "Captured amount is less than required plan price" },
+      { status: 400 }
+    );
+  }
+
   await activateSubscriptionFromPayment({
     restaurantId,
-    planId,
+    planId: plan.id,
     billingCycle: billingCycle as PaidBillingCycle,
     provider: "RAZORPAY",
-    amount: Number(paymentEntity.amount || 0) / 100,
+    amount: paidAmountInr,
     currency: typeof paymentEntity.currency === "string" ? paymentEntity.currency : "INR",
     externalOrderId:
       typeof paymentEntity.order_id === "string"
