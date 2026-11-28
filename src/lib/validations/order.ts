@@ -3,8 +3,11 @@ import { z } from "zod";
 export const createOrderSchema = z.object({
   restaurantSlug: z.string().min(1, "Restaurant slug is required"),
   tableToken: z.string().optional().nullable(),
+  orderType: z.enum(["DINE_IN", "TAKEAWAY", "ROOM_DELIVERY"]).default("DINE_IN"),
   customerName: z.string().max(100).optional().nullable(),
   customerPhone: z.string().max(20).optional().nullable(),
+  deliveryAddress: z.string().max(300).optional().nullable(),
+  deliveryNotes: z.string().max(300).optional().nullable(),
   paymentMethod: z
     .enum(["CASH_AT_COUNTER", "UPI_ONLINE", "CARD"])
     .default("CASH_AT_COUNTER"),
@@ -27,7 +30,7 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z
-    .enum(["PENDING", "CONFIRMED", "PREPARING", "SERVED", "COMPLETED", "CANCELLED"])
+    .enum(["PENDING", "CONFIRMED", "PREPARING", "OUT_FOR_DELIVERY", "SERVED", "COMPLETED", "CANCELLED"])
     .optional(),
   paymentStatus: z.enum(["PENDING", "PAID", "REFUNDED"]).optional(),
   paymentMethod: z.enum(["CASH_AT_COUNTER", "UPI_ONLINE", "CARD"]).optional(),

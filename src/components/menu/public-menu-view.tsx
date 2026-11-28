@@ -80,6 +80,11 @@ export interface PublicMenuRestaurant {
   currency: string;
   primaryColor: string;
   template: "MODERN" | "CLASSIC" | "MINIMAL";
+  isDeliveryEnabled?: boolean;
+  minDeliveryAmount?: number;
+  deliveryFee?: number;
+  deliveryAreas?: string | null;
+  estimatedPrepTimeMin?: number;
 }
 
 export interface PublicMenuViewProps {
@@ -105,7 +110,14 @@ interface CartEntry {
 interface ActiveOrder {
   id: string;
   orderNumber: string;
-  status: "PENDING" | "CONFIRMED" | "PREPARING" | "SERVED" | "COMPLETED" | "CANCELLED";
+  orderType?: "DINE_IN" | "TAKEAWAY" | "ROOM_DELIVERY";
+  customerName: string | null;
+  customerPhone: string | null;
+  deliveryAddress?: string | null;
+  deliveryNotes?: string | null;
+  deliveryFee?: number;
+  estimatedPrepTime?: number | null;
+  status: "PENDING" | "CONFIRMED" | "PREPARING" | "OUT_FOR_DELIVERY" | "SERVED" | "COMPLETED" | "CANCELLED";
   paymentStatus: "PENDING" | "PAID" | "REFUNDED";
   paymentMethod: "CASH_AT_COUNTER" | "UPI_ONLINE" | "CARD";
   subtotal: number;
@@ -149,6 +161,9 @@ export function PublicMenuView({
   const [cart, setCart] = React.useState<Record<string, CartEntry>>({});
   const [orderModalOpen, setOrderModalOpen] = React.useState(false);
   const [submittingOrder, setSubmittingOrder] = React.useState(false);
+  const [orderType, setOrderType] = React.useState<"DINE_IN" | "ROOM_DELIVERY">("DINE_IN");
+  const [deliveryAddress, setDeliveryAddress] = React.useState("");
+  const [deliveryNotes, setDeliveryNotes] = React.useState("");
   const [customerName, setCustomerName] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
   const [orderNotes, setOrderNotes] = React.useState("");
@@ -163,6 +178,19 @@ export function PublicMenuView({
   const [upiRefInput, setUpiRefInput] = React.useState("");
   const [copiedUpi, setCopiedUpi] = React.useState(false);
   const [payingNow, setPayingNow] = React.useState(false);
+
+  // Restore saved delivery info from localStorage
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedAddr = window.localStorage.getItem("tablory_delivery_address");
+      const savedPhone = window.localStorage.getItem("tablory_delivery_phone");
+      const savedName = window.localStorage.getItem("tablory_delivery_name");
+      if (savedAddr) setDeliveryAddress(savedAddr);
+      if (savedPhone) setCustomerPhone(savedPhone);
+      if (savedName) setCustomerName(savedName);
+    } catch {}
+  }, []);
 
   const sessionStorageKey = React.useMemo(
     () => `tablory_orders:${restaurant.slug}:${table?.id || "general"}`,
@@ -387,6 +415,12 @@ export function PublicMenuView({
                       description: `Your food is now being prepared fresh in the kitchen.`,
                       duration: 6000,
                     });
+                  } else if (s === "OUT_FOR_DELIVERY") {
+                    chimeEngine.playOrderBell();
+                    toast.success(`Order #${orderNum} Out for Delivery! 🛵`, {
+                      description: `Your order is on the way to your room/hostel. Please keep phone handy.`,
+                      duration: 8000,
+                    });
                   } else if (s === "SERVED") {
                     chimeEngine.playOrderBell();
                     toast.success(`Order #${orderNum} Served!`, {
@@ -426,13 +460,34 @@ export function PublicMenuView({
 
   async function handlePlaceOrder() {
     if (cartEntries.length === 0) return;
+
+    if (orderType === "ROOM_DELIVERY") {
+      if (!customerPhone.trim() || customerPhone.trim().length < 10) {
+        toast.error("Please enter a valid 10-digit phone number so delivery staff can reach you.");
+        return;
+      }
+      if (!deliveryAddress.trim() || deliveryAddress.trim().length < 3) {
+        toast.error("Please provide your Hostel/Building name and Room/Door number.");
+        return;
+      }
+      // Save for 1-click repeat orders
+      try {
+        window.localStorage.setItem("tablory_delivery_address", deliveryAddress.trim());
+        window.localStorage.setItem("tablory_delivery_phone", customerPhone.trim());
+        if (customerName.trim()) window.localStorage.setItem("tablory_delivery_name", customerName.trim());
+      } catch {}
+    }
+
     setSubmittingOrder(true);
     try {
       const payload = {
         restaurantSlug: restaurant.slug,
-        tableToken: table?.token || null,
+        tableToken: orderType === "ROOM_DELIVERY" ? null : (table?.token || null),
+        orderType,
         customerName: customerName.trim() || null,
         customerPhone: customerPhone.trim() || null,
+        deliveryAddress: orderType === "ROOM_DELIVERY" ? deliveryAddress.trim() : null,
+        deliveryNotes: orderType === "ROOM_DELIVERY" ? deliveryNotes.trim() || null : null,
         paymentMethod,
         notes: orderNotes.trim() || null,
         items: cartEntries.map((e) => ({
@@ -1648,6 +1703,81 @@ export function PublicMenuView({
                   </div>
                 </div>
 
+                {/* Order Mode Switcher (Dine-in / Table vs Hostel / Room Delivery) */}
+                <div className="rounded-2xl border border-stone-200/80 bg-white p-3 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-500 block">
+                    Order Type
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType("DINE_IN")}
+                      className={cn(
+                        "rounded-xl py-2 px-3 text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5",
+                        orderType === "DINE_IN"
+                          ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                          : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
+                      )}
+                    >
+                      <Utensils className="h-3.5 w-3.5" />
+                      {table ? `Table ${table.tableNumber}` : "Dine-in / Pickup"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType("ROOM_DELIVERY")}
+                      className={cn(
+                        "rounded-xl py-2 px-3 text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5",
+                        orderType === "ROOM_DELIVERY"
+                          ? "bg-purple-600 text-white border-purple-600 shadow-xs"
+                          : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                      )}
+                    >
+                      <span>🏠</span>
+                      Hostel / Delivery
+                    </button>
+                  </div>
+                </div>
+
+                {/* Delivery Address Fields for Hostel / Campus / Room Orders */}
+                {orderType === "ROOM_DELIVERY" && (
+                  <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-900 flex items-center gap-1">
+                        📍 Hostel / Room Delivery Address
+                      </span>
+                      <span className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-full">
+                        Required
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone-700 mb-1 block">
+                        Hostel / Building Name &amp; Room / Flat No *
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="e.g. Hostel 4, Room 312 or Tower B, Flat 402"
+                        className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-600/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone-700 mb-1 block">
+                        Delivery Instructions (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryNotes}
+                        onChange={(e) => setDeliveryNotes(e.target.value)}
+                        placeholder="e.g. Call when outside hostel gate, leave at security"
+                        className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-600/20"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Cooking Instructions & Optional Guest Details */}
                 <div className="rounded-2xl border border-stone-200/80 bg-white p-3.5 space-y-3">
                   <div>
@@ -1678,7 +1808,7 @@ export function PublicMenuView({
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-stone-700 mb-1 block">
-                        Phone (Optional)
+                        Phone {orderType === "ROOM_DELIVERY" ? <span className="text-red-600">*</span> : "(Optional)"}
                       </label>
                       <input
                         type="tel"
@@ -1816,20 +1946,31 @@ export function PublicMenuView({
                 data-lenis-prevent
                 className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[#FAF8F5]/60 text-left"
               >
-                {/* 4-Step Kitchen Progress Card */}
+                {/* Progress Steps */}
                 {(() => {
-                  const steps = [
-                    { key: "PENDING", label: "Received" },
-                    { key: "CONFIRMED", label: "Accepted" },
-                    { key: "PREPARING", label: "Cooking" },
-                    { key: "SERVED", label: "Served" },
-                  ] as const;
+                  const isDelivery = activeOrder.orderType === "ROOM_DELIVERY";
+                  const steps = isDelivery
+                    ? ([
+                        { key: "PENDING", label: "Received" },
+                        { key: "CONFIRMED", label: "Accepted" },
+                        { key: "PREPARING", label: "Cooking" },
+                        { key: "OUT_FOR_DELIVERY", label: "On The Way" },
+                        { key: "COMPLETED", label: "Delivered" },
+                      ] as const)
+                    : ([
+                        { key: "PENDING", label: "Received" },
+                        { key: "CONFIRMED", label: "Accepted" },
+                        { key: "PREPARING", label: "Cooking" },
+                        { key: "SERVED", label: "Served" },
+                      ] as const);
+
                   const statusIndexMap: Record<ActiveOrder["status"], number> = {
                     PENDING: 0,
                     CONFIRMED: 1,
                     PREPARING: 2,
+                    OUT_FOR_DELIVERY: 3,
                     SERVED: 3,
-                    COMPLETED: 3,
+                    COMPLETED: isDelivery ? 4 : 3,
                     CANCELLED: -1,
                   };
                   const currentIdx = statusIndexMap[activeOrder.status];
@@ -1838,7 +1979,7 @@ export function PublicMenuView({
                     <div className="rounded-2xl border border-stone-200/80 bg-white p-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                          Kitchen Status
+                          {isDelivery ? "Delivery Tracking" : "Kitchen Status"}
                         </span>
                         <span
                           className={cn(
@@ -1847,14 +1988,17 @@ export function PublicMenuView({
                               ? "bg-red-50 text-red-700"
                               : activeOrder.status === "COMPLETED" || activeOrder.status === "SERVED"
                                 ? "bg-emerald-50 text-emerald-700"
-                                : "bg-amber-50 text-amber-800"
+                                : activeOrder.status === "OUT_FOR_DELIVERY"
+                                  ? "bg-purple-100 text-purple-800 animate-pulse"
+                                  : "bg-amber-50 text-amber-800"
                           )}
                         >
                           {activeOrder.status === "PENDING" && "Waiting for Kitchen"}
                           {activeOrder.status === "CONFIRMED" && "Order Accepted"}
                           {activeOrder.status === "PREPARING" && "Preparing Fresh"}
+                          {activeOrder.status === "OUT_FOR_DELIVERY" && "🛵 Out for Delivery"}
                           {activeOrder.status === "SERVED" && "Served at Table"}
-                          {activeOrder.status === "COMPLETED" && "Completed"}
+                          {activeOrder.status === "COMPLETED" && (isDelivery ? "✓ Delivered" : "Completed")}
                           {activeOrder.status === "CANCELLED" && "Cancelled"}
                         </span>
                       </div>

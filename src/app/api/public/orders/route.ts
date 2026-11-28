@@ -37,8 +37,11 @@ export async function POST(req: Request) {
     const {
       restaurantSlug,
       tableToken,
+      orderType = "DINE_IN",
       customerName,
       customerPhone,
+      deliveryAddress,
+      deliveryNotes,
       paymentMethod,
       notes,
       items,
@@ -54,6 +57,10 @@ export async function POST(req: Request) {
         status: true,
         isPublished: true,
         currency: true,
+        isDeliveryEnabled: true,
+        minDeliveryAmount: true,
+        deliveryFee: true,
+        estimatedPrepTimeMin: true,
         subscription: {
           select: { status: true, trialEndsAt: true, currentPeriodEnd: true },
         },
@@ -150,9 +157,34 @@ export async function POST(req: Request) {
       };
     });
 
+    // Hostel / Room Delivery validation
+    if (orderType === "ROOM_DELIVERY") {
+      if (!customerPhone || customerPhone.trim().length < 10) {
+        return NextResponse.json(
+          { error: "A valid 10-digit phone number is required for hostel & room delivery." },
+          { status: 400 }
+        );
+      }
+      if (!deliveryAddress || deliveryAddress.trim().length < 3) {
+        return NextResponse.json(
+          { error: "Please provide your Hostel/Building name and Room/Door number." },
+          { status: 400 }
+        );
+      }
+      const minAmount = Number(restaurant.minDeliveryAmount || 0);
+      if (minAmount > 0 && subtotalNum < minAmount) {
+        return NextResponse.json(
+          { error: `Minimum order amount for delivery is ₹${minAmount.toFixed(0)}.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const deliveryFeeNum = orderType === "ROOM_DELIVERY" ? Number(restaurant.deliveryFee || 0) : 0;
     const subtotal = new Decimal(subtotalNum.toFixed(2));
     const taxAmount = new Decimal("0.00");
-    const totalAmount = subtotal;
+    const deliveryFeeDecimal = new Decimal(deliveryFeeNum.toFixed(2));
+    const totalAmount = new Decimal((subtotalNum + deliveryFeeNum).toFixed(2));
 
     if (subtotalNum > 25000) {
       return NextResponse.json(
@@ -180,8 +212,13 @@ export async function POST(req: Request) {
         restaurantId: restaurant.id,
         tableId,
         orderNumber,
+        orderType,
         customerName: customerName || null,
         customerPhone: customerPhone || null,
+        deliveryAddress: deliveryAddress || null,
+        deliveryNotes: deliveryNotes || null,
+        deliveryFee: deliveryFeeDecimal,
+        estimatedPrepTime: restaurant.estimatedPrepTimeMin || 20,
         status: "PENDING",
         paymentStatus: paymentMethod === "UPI_ONLINE" ? "PENDING" : "PENDING",
         paymentMethod,
@@ -207,6 +244,13 @@ export async function POST(req: Request) {
         order: {
           id: order.id,
           orderNumber: order.orderNumber,
+          orderType: order.orderType,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          deliveryAddress: order.deliveryAddress,
+          deliveryNotes: order.deliveryNotes,
+          deliveryFee: Number(order.deliveryFee),
+          estimatedPrepTime: order.estimatedPrepTime,
           restaurantName: restaurant.name,
           currency: restaurant.currency,
           status: order.status,

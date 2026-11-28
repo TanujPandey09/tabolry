@@ -36,9 +36,14 @@ interface OrderItem {
 interface Order {
   id: string;
   orderNumber: string;
+  orderType: "DINE_IN" | "TAKEAWAY" | "ROOM_DELIVERY";
   customerName: string | null;
   customerPhone: string | null;
-  status: "PENDING" | "CONFIRMED" | "PREPARING" | "SERVED" | "COMPLETED" | "CANCELLED";
+  deliveryAddress: string | null;
+  deliveryNotes: string | null;
+  deliveryFee: number;
+  estimatedPrepTime: number | null;
+  status: "PENDING" | "CONFIRMED" | "PREPARING" | "OUT_FOR_DELIVERY" | "SERVED" | "COMPLETED" | "CANCELLED";
   paymentStatus: "PENDING" | "PAID" | "REFUNDED";
   paymentMethod: "CASH_AT_COUNTER" | "UPI_ONLINE" | "CARD";
   subtotal: number;
@@ -48,6 +53,58 @@ interface Order {
   createdAt: string;
   table: { id: string; tableNumber: string; label: string | null } | null;
   items: OrderItem[];
+}
+
+// Helper to calculate elapsed time in minutes
+function getElapsedMinutes(createdAt: string): number {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60)));
+}
+
+// Elapsed timer badge component
+function OrderTimerBadge({ createdAt, isFinished }: { createdAt: string; isFinished: boolean }) {
+  const [elapsed, setElapsed] = React.useState(() => getElapsedMinutes(createdAt));
+
+  React.useEffect(() => {
+    if (isFinished) return;
+    const interval = setInterval(() => {
+      setElapsed(getElapsedMinutes(createdAt));
+    }, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, [createdAt, isFinished]);
+
+  if (isFinished) {
+    return (
+      <span className="flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+        <Clock className="h-3 w-3" />
+        {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </span>
+    );
+  }
+
+  // Active timers with visual color coding
+  if (elapsed >= 25) {
+    return (
+      <span className="flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-700 animate-pulse border border-red-300">
+        <Clock className="h-3 w-3 text-red-600" />
+        ⏱ {elapsed}m ago (Delayed)
+      </span>
+    );
+  }
+  if (elapsed >= 15) {
+    return (
+      <span className="flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300">
+        <Clock className="h-3 w-3 text-amber-600" />
+        ⏱ {elapsed}m ago
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
+      <Clock className="h-3 w-3 text-emerald-600" />
+      ⏱ {elapsed}m ago
+    </span>
+  );
 }
 
 export default function DashboardOrdersPage() {
@@ -297,9 +354,13 @@ export default function DashboardOrdersPage() {
                 <div>
                   {/* Top Bar: Order Number, Table & Time */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-extrabold text-slate-900">{order.orderNumber}</span>
-                      {order.table ? (
+                      {order.orderType === "ROOM_DELIVERY" ? (
+                        <span className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-800 flex items-center gap-1">
+                          🏠 Hostel/Room Delivery
+                        </span>
+                      ) : order.table ? (
                         <span className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-800">
                           Table {order.table.tableNumber}
                         </span>
@@ -310,14 +371,26 @@ export default function DashboardOrdersPage() {
                       )}
                     </div>
 
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      <Clock className="h-3.5 w-3.5" />
-                      {new Date(order.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <OrderTimerBadge
+                      createdAt={order.createdAt}
+                      isFinished={order.status === "COMPLETED" || order.status === "CANCELLED"}
+                    />
                   </div>
+
+                  {/* Delivery Location Banner */}
+                  {order.orderType === "ROOM_DELIVERY" && order.deliveryAddress && (
+                    <div className="mt-2.5 rounded-lg border border-purple-200 bg-purple-50/70 p-2.5 text-xs text-purple-950">
+                      <div className="font-semibold flex items-center gap-1">
+                        📍 <span>Delivery Location:</span>
+                      </div>
+                      <p className="mt-0.5 text-slate-800 font-medium">{order.deliveryAddress}</p>
+                      {order.deliveryNotes && (
+                        <p className="mt-0.5 text-[11px] text-purple-800 italic">
+                          Note: {order.deliveryNotes}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Customer Info if present */}
                   {(order.customerName || order.customerPhone) && (
@@ -445,13 +518,35 @@ export default function DashboardOrdersPage() {
                     )}
 
                     {isPreparing && (
+                      order.orderType === "ROOM_DELIVERY" ? (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "OUT_FOR_DELIVERY")}
+                          disabled={updatingId === order.id}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
+                        >
+                          Send Out for Delivery 🛵
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => updateOrderStatus(order.id, "SERVED")}
+                          disabled={updatingId === order.id}
+                          className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
+                        >
+                          Mark as Served to Table
+                        </Button>
+                      )
+                    )}
+
+                    {order.status === "OUT_FOR_DELIVERY" && (
                       <Button
                         size="sm"
-                        onClick={() => updateOrderStatus(order.id, "SERVED")}
+                        onClick={() => updateOrderStatus(order.id, "COMPLETED")}
                         disabled={updatingId === order.id}
-                        className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
                       >
-                        Mark as Served to Table
+                        Delivered & Complete Order ✓
                       </Button>
                     )}
 

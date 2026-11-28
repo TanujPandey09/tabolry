@@ -53,8 +53,13 @@ export async function GET(request: Request) {
       orders: orders.map((o) => ({
         id: o.id,
         orderNumber: o.orderNumber,
+        orderType: o.orderType,
         customerName: o.customerName,
         customerPhone: o.customerPhone,
+        deliveryAddress: o.deliveryAddress,
+        deliveryNotes: o.deliveryNotes,
+        deliveryFee: Number(o.deliveryFee),
+        estimatedPrepTime: o.estimatedPrepTime,
         status: o.status,
         paymentStatus: o.paymentStatus,
         paymentMethod: o.paymentMethod,

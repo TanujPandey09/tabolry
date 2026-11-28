@@ -50,8 +50,21 @@ interface DashboardData {
   };
 }
 
+interface DishSale {
+  name: string;
+  quantity: number;
+  revenue: number;
+  ordersCount: number;
+  revenueFormatted: string;
+}
+
 export default function DashboardOverviewPage() {
   const [data, setData] = React.useState<DashboardData | null>(null);
+  const [dishSales, setDishSales] = React.useState<{
+    totalDishesSold: number;
+    totalDishRevenue: number;
+    dishes: DishSale[];
+  } | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [toggling, setToggling] = React.useState(false);
@@ -60,10 +73,18 @@ export default function DashboardOverviewPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/restaurants/current");
+      const [res, dishRes] = await Promise.all([
+        fetch("/api/restaurants/current"),
+        fetch("/api/analytics/dish-sales?period=today").catch(() => null),
+      ]);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
       setData(json);
+
+      if (dishRes && dishRes.ok) {
+        const dishJson = await dishRes.json();
+        setDishSales(dishJson);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
@@ -287,6 +308,67 @@ export default function DashboardOverviewPage() {
           </Link>
         ))}
       </div>
+
+      {/* Today's Dish Sales Tracker */}
+      <Card className="border-slate-200/90 bg-white shadow-2xs">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <UtensilsCrossed className="h-5 w-5 text-[#E15A2B]" />
+              Today&apos;s Dish Sales Tracker
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Live tally of dishes ordered today, units sold, and revenue generated
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Sold Today
+            </span>
+            <p className="text-xl font-extrabold text-slate-900">
+              {dishSales?.totalDishesSold || 0} <span className="text-xs font-normal text-slate-500">portions</span>
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!dishSales || dishSales.dishes.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center">
+              <p className="text-xs text-slate-500">
+                No orders received yet today. As guests order dishes, live sales will appear here automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {dishSales.dishes.slice(0, 8).map((dish, idx) => (
+                <div
+                  key={dish.name}
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-3"
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">
+                        #{idx + 1}
+                      </span>
+                      <p className="text-xs font-bold text-slate-900 truncate">{dish.name}</p>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {dish.ordersCount} {dish.ordersCount === 1 ? "order" : "orders"}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                      {dish.quantity} sold
+                    </span>
+                    <p className="mt-1 text-xs font-extrabold text-slate-900">
+                      {dish.revenueFormatted}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions Bar */}
       <Card className="border-slate-200/90 bg-white shadow-2xs">
