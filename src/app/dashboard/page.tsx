@@ -52,9 +52,17 @@ interface DashboardData {
 
 interface DishSale {
   name: string;
+  categoryName?: string;
   quantity: number;
   revenue: number;
   ordersCount: number;
+  revenueFormatted: string;
+}
+
+interface CategorySale {
+  categoryName: string;
+  quantity: number;
+  revenue: number;
   revenueFormatted: string;
 }
 
@@ -63,6 +71,7 @@ export default function DashboardOverviewPage() {
   const [dishSales, setDishSales] = React.useState<{
     totalDishesSold: number;
     totalDishRevenue: number;
+    categories?: CategorySale[];
     dishes: DishSale[];
   } | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -338,33 +347,61 @@ export default function DashboardOverviewPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {dishSales.dishes.slice(0, 8).map((dish, idx) => (
-                <div
-                  key={dish.name}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-3"
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">
-                        #{idx + 1}
+            <div className="space-y-4">
+              {/* Category-Level Aggregates (e.g. Starters, Main Course, Desserts, Beverages) */}
+              {dishSales.categories && dishSales.categories.length > 0 && (
+                <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-100">
+                  {dishSales.categories.map((cat) => (
+                    <div
+                      key={cat.categoryName}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs shadow-2xs"
+                    >
+                      <span className="font-bold text-slate-800">{cat.categoryName}:</span>
+                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-extrabold text-amber-900">
+                        {cat.quantity} sold
                       </span>
-                      <p className="text-xs font-bold text-slate-900 truncate">{dish.name}</p>
+                      <span className="text-slate-500 font-semibold">{cat.revenueFormatted}</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      {dish.ordersCount} {dish.ordersCount === 1 ? "order" : "orders"}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
-                      {dish.quantity} sold
-                    </span>
-                    <p className="mt-1 text-xs font-extrabold text-slate-900">
-                      {dish.revenueFormatted}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* Dish-Level Leaderboard */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {dishSales.dishes.slice(0, 8).map((dish, idx) => (
+                  <div
+                    key={dish.name}
+                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-3"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">
+                          #{idx + 1}
+                        </span>
+                        <p className="text-xs font-bold text-slate-900 truncate">{dish.name}</p>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                        {dish.categoryName && (
+                          <span className="text-[10px] bg-slate-200/80 px-1.5 py-0.2 rounded text-slate-600 font-medium truncate max-w-[80px]">
+                            {dish.categoryName}
+                          </span>
+                        )}
+                        <span>
+                          {dish.ordersCount} {dish.ordersCount === 1 ? "order" : "orders"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                        {dish.quantity} sold
+                      </span>
+                      <p className="mt-1 text-xs font-extrabold text-slate-900">
+                        {dish.revenueFormatted}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>

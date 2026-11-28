@@ -44,20 +44,37 @@ export async function GET(request: Request) {
             price: true,
             quantity: true,
             subtotal: true,
+            menuItem: {
+              select: {
+                category: {
+                  select: { name: true },
+                },
+              },
+            },
           },
         },
       },
     });
 
-    // Aggregate sales per dish
+    // Aggregate sales per dish and per category
     const dishMap = new Map<
       string,
       {
         name: string;
+        categoryName: string;
         quantity: number;
         revenue: number;
         ordersCount: number;
         lastOrderedAt: Date;
+      }
+    >();
+
+    const categoryMap = new Map<
+      string,
+      {
+        categoryName: string;
+        quantity: number;
+        revenue: number;
       }
     >();
 
@@ -70,9 +87,24 @@ export async function GET(request: Request) {
         const existing = dishMap.get(key);
         const itemQty = item.quantity;
         const itemRevenue = Number(item.subtotal);
+        const catName = item.menuItem?.category?.name || "Main Menu";
 
         totalDishesSold += itemQty;
         totalDishRevenue += itemRevenue;
+
+        // Category breakdown (Desserts, Starters, Drinks, etc.)
+        const catKey = catName.trim().toLowerCase();
+        const existingCat = categoryMap.get(catKey);
+        if (existingCat) {
+          existingCat.quantity += itemQty;
+          existingCat.revenue += itemRevenue;
+        } else {
+          categoryMap.set(catKey, {
+            categoryName: catName,
+            quantity: itemQty,
+            revenue: itemRevenue,
+          });
+        }
 
         if (existing) {
           existing.quantity += itemQty;
@@ -84,6 +116,7 @@ export async function GET(request: Request) {
         } else {
           dishMap.set(key, {
             name: item.name,
+            categoryName: catName,
             quantity: itemQty,
             revenue: itemRevenue,
             ordersCount: 1,
@@ -101,10 +134,19 @@ export async function GET(request: Request) {
         revenueFormatted: `₹${dish.revenue.toFixed(2)}`,
       }));
 
+    // Sort categories by quantity sold descending
+    const categoryList = Array.from(categoryMap.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .map((cat) => ({
+        ...cat,
+        revenueFormatted: `₹${cat.revenue.toFixed(2)}`,
+      }));
+
     return NextResponse.json({
       period,
       totalDishesSold,
       totalDishRevenue,
+      categories: categoryList,
       dishes: dishList,
     });
   } catch (error) {
