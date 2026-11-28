@@ -24,17 +24,26 @@ export async function GET() {
     const ctx = await requireRestaurantContext();
     const restaurantId = ctx.restaurant.id;
 
-    // 1. Fetch recent orders with items & table
+    // 1. Fetch recent orders with lightweight selection
     const recentOrders = await prisma.order.findMany({
       where: { restaurantId },
       orderBy: { createdAt: "desc" },
-      take: 25,
-      include: {
+      take: 15,
+      select: {
+        id: true,
+        orderNumber: true,
+        totalAmount: true,
+        status: true,
+        paymentStatus: true,
+        paymentMethod: true,
+        createdAt: true,
+        updatedAt: true,
         table: {
-          select: { id: true, tableNumber: true, label: true },
+          select: { tableNumber: true },
         },
         items: {
-          select: { id: true, name: true, quantity: true, price: true },
+          select: { name: true, quantity: true },
+          take: 4,
         },
       },
     });
@@ -46,10 +55,13 @@ export async function GET() {
         tableId: { not: null },
       },
       orderBy: { scannedAt: "desc" },
-      take: 10,
-      include: {
+      take: 6,
+      select: {
+        id: true,
+        scannedAt: true,
+        deviceType: true,
         table: {
-          select: { id: true, tableNumber: true, label: true },
+          select: { tableNumber: true },
         },
       },
     });

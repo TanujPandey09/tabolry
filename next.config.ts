@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
   images: {
     unoptimized: true,
     remotePatterns: [

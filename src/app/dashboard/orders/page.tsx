@@ -139,10 +139,33 @@ export default function DashboardOrdersPage() {
 
   React.useEffect(() => {
     fetchOrders();
-    const interval = setInterval(() => {
-      fetchOrders(false);
-    }, 5000);
-    return () => clearInterval(interval);
+
+    let interval: NodeJS.Timeout | null = null;
+    const startPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          fetchOrders(false);
+        }
+      }, 8000); // 8s polling when page is visible
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchOrders(false);
+        startPolling();
+      } else if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [fetchOrders]);
 
   async function updateOrderStatus(orderId: string, newStatus: Order["status"]) {

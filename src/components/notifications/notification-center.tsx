@@ -132,9 +132,38 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [router]);
 
   React.useEffect(() => {
+    // Initial fetch
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 4500);
-    return () => clearInterval(interval);
+
+    // Smart polling: Only poll when tab is actively visible and focused
+    let interval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          fetchNotifications();
+        }
+      }, 10000); // 10s is responsive while cutting 60% background server load
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchNotifications();
+        startPolling();
+      } else if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchNotifications]);
 
   const toggleSound = React.useCallback(() => {

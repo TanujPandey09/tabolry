@@ -189,7 +189,7 @@ export function PublicMenuView({
       if (savedAddr) setDeliveryAddress(savedAddr);
       if (savedPhone) setCustomerPhone(savedPhone);
       if (savedName) setCustomerName(savedName);
-    } catch {}
+    } catch { }
   }, []);
 
   const sessionStorageKey = React.useMemo(
@@ -389,7 +389,10 @@ export function PublicMenuView({
       return;
     }
     const polledId = activeOrder.id;
-    const interval = setInterval(async () => {
+    let interval: NodeJS.Timeout | null = null;
+
+    const pollStatus = async () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       try {
         const res = await fetch(`/api/public/orders/${polledId}`);
         if (res.ok) {
@@ -454,8 +457,12 @@ export function PublicMenuView({
       } catch {
         // network polling silent retry
       }
-    }, 4000);
-    return () => clearInterval(interval);
+    };
+
+    interval = setInterval(pollStatus, 7000);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [activeOrder, restaurant.name, table]);
 
   async function handlePlaceOrder() {
@@ -475,7 +482,7 @@ export function PublicMenuView({
         window.localStorage.setItem("tablory_delivery_address", deliveryAddress.trim());
         window.localStorage.setItem("tablory_delivery_phone", customerPhone.trim());
         if (customerName.trim()) window.localStorage.setItem("tablory_delivery_name", customerName.trim());
-      } catch {}
+      } catch { }
     }
 
     setSubmittingOrder(true);
@@ -561,11 +568,11 @@ export function PublicMenuView({
         prev.map((ord) =>
           ord.id === activeOrder.id
             ? {
-                ...ord,
-                paymentMethod: "UPI_ONLINE",
-                paymentStatus: data.order?.paymentStatus || ord.paymentStatus,
-                notes: data.order?.notes ?? ord.notes,
-              }
+              ...ord,
+              paymentMethod: "UPI_ONLINE",
+              paymentStatus: data.order?.paymentStatus || ord.paymentStatus,
+              notes: data.order?.notes ?? ord.notes,
+            }
             : ord
         )
       );
@@ -1073,9 +1080,9 @@ export function PublicMenuView({
                       className={cn(
                         "group relative flex items-start justify-between gap-3.5 sm:gap-4 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E15A2B]/40",
                         template === "MODERN" &&
-                          "rounded-2xl border border-stone-200/90 bg-white p-3.5 sm:p-4 hover:border-stone-300",
+                        "rounded-2xl border border-stone-200/90 bg-white p-3.5 sm:p-4 hover:border-stone-300",
                         isClassic &&
-                          "rounded-2xl border border-stone-200 bg-[#FAF7F2] p-3.5 sm:p-4 hover:border-stone-300",
+                        "rounded-2xl border border-stone-200 bg-[#FAF7F2] p-3.5 sm:p-4 hover:border-stone-300",
                         isMinimal && "py-4 hover:bg-slate-50/60 px-2 -mx-2 rounded-xl",
                         !item.isAvailable && "opacity-70"
                       )}
@@ -1951,18 +1958,18 @@ export function PublicMenuView({
                   const isDelivery = activeOrder.orderType === "ROOM_DELIVERY";
                   const steps = isDelivery
                     ? ([
-                        { key: "PENDING", label: "Received" },
-                        { key: "CONFIRMED", label: "Accepted" },
-                        { key: "PREPARING", label: "Cooking" },
-                        { key: "OUT_FOR_DELIVERY", label: "On The Way" },
-                        { key: "COMPLETED", label: "Delivered" },
-                      ] as const)
+                      { key: "PENDING", label: "Received" },
+                      { key: "CONFIRMED", label: "Accepted" },
+                      { key: "PREPARING", label: "Cooking" },
+                      { key: "OUT_FOR_DELIVERY", label: "On The Way" },
+                      { key: "COMPLETED", label: "Delivered" },
+                    ] as const)
                     : ([
-                        { key: "PENDING", label: "Received" },
-                        { key: "CONFIRMED", label: "Accepted" },
-                        { key: "PREPARING", label: "Cooking" },
-                        { key: "SERVED", label: "Served" },
-                      ] as const);
+                      { key: "PENDING", label: "Received" },
+                      { key: "CONFIRMED", label: "Accepted" },
+                      { key: "PREPARING", label: "Cooking" },
+                      { key: "SERVED", label: "Served" },
+                    ] as const);
 
                   const statusIndexMap: Record<ActiveOrder["status"], number> = {
                     PENDING: 0,
@@ -2224,8 +2231,7 @@ export function PublicMenuView({
                 {(restaurant.whatsappNumber || restaurant.phone) && (
                   <a
                     href={`https://wa.me/${formatWhatsAppPhone(restaurant.whatsappNumber || restaurant.phone)}?text=${encodeURIComponent(
-                      `*New Order #${activeOrder.orderNumber}* — ${restaurant.name}\n${
-                        activeOrder.tableNumber ? `Table: *${activeOrder.tableNumber}*\n` : ""
+                      `*New Order #${activeOrder.orderNumber}* — ${restaurant.name}\n${activeOrder.tableNumber ? `Table: *${activeOrder.tableNumber}*\n` : ""
                       }\n${(activeOrder.items || [])
                         .map((i) => `- ${i.quantity}x ${i.name} (${formatCurrency(i.subtotal, restaurant.currency)})`)
                         .join("\n")}\n\n*Total: ${formatCurrency(activeOrder.totalAmount, restaurant.currency)}*`
